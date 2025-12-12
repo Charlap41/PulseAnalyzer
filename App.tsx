@@ -118,6 +118,7 @@ const App: React.FC = () => {
     const [isPortraitMobile, setIsPortraitMobile] = useState(false);
     const [smoothing, setSmoothing] = useState(3);
     const [chartFillEnabled, setChartFillEnabled] = useState(true);
+    const [connectGaps, setConnectGaps] = useState(false); // Default: show gaps (dropouts visible)
     const chartRef = useRef<HTMLCanvasElement | null>(null);
     const chartInstance = useRef<any>(null);
     const [expandedDatasetId, setExpandedDatasetId] = useState<string | null>(null);
@@ -571,7 +572,7 @@ const App: React.FC = () => {
             pointRadius: 0,
             tension: 0.3,
             fill: chartFillEnabled,
-            spanGaps: false // Ensure lines break on null
+            spanGaps: connectGaps // false = show gaps (dropouts visible), true = interpolate
         };
     };
 
@@ -644,7 +645,7 @@ const App: React.FC = () => {
                 fullscreenChartInstance.destroy();
             }
         };
-    }, [isChartFullscreen, activeSession, isDark, smoothing, chartFillEnabled]);
+    }, [isChartFullscreen, activeSession, isDark, smoothing, chartFillEnabled, connectGaps]);
 
     useEffect(() => {
         if (!chartRef.current || !activeSession || activeTab !== 'session') return;
@@ -908,7 +909,7 @@ const App: React.FC = () => {
             }
         });
 
-    }, [activeSession, activeSession?.datasets, smoothing, activeTab, view, chartFillEnabled]);
+    }, [activeSession, activeSession?.datasets, smoothing, activeTab, view, chartFillEnabled, connectGaps]);
 
     const zoomIn = () => chartInstance.current?.zoom(1.1);
     const zoomOut = () => chartInstance.current?.zoom(0.9);
@@ -2979,6 +2980,17 @@ const App: React.FC = () => {
                                                     >
                                                         <i className={`fa-solid ${chartFillEnabled ? 'fa-toggle-on' : 'fa-toggle-off'}`}></i>
                                                         {chartFillEnabled ? 'ON' : 'OFF'}
+                                                    </button>
+                                                </div>
+                                                <div>
+                                                    <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{lang === 'fr' ? 'Coupures' : 'Gaps'}</h4>
+                                                    <button
+                                                        onClick={() => setConnectGaps(!connectGaps)}
+                                                        title={lang === 'fr' ? 'Lisser les coupures de signal (interpolation)' : 'Smooth signal gaps (interpolation)'}
+                                                        className={`text-xs flex items-center gap-2 px-3 py-1.5 rounded transition ${connectGaps ? 'bg-brand-500 text-white' : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:text-brand-500'}`}
+                                                    >
+                                                        <i className={`fa-solid ${connectGaps ? 'fa-link' : 'fa-link-slash'}`}></i>
+                                                        {connectGaps ? (lang === 'fr' ? 'Lissées' : 'Smooth') : (lang === 'fr' ? 'Visibles' : 'Visible')}
                                                     </button>
                                                 </div>
                                                 <div>
