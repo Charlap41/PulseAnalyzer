@@ -873,7 +873,16 @@ const App: React.FC = () => {
                             tooltipEl.style.opacity = '1';
 
                             const canvasRect = chart.canvas.getBoundingClientRect();
-                            tooltipEl.style.left = (canvasRect.left + window.scrollX + tooltip.caretX + 10) + 'px';
+                            const tooltipWidth = tooltipEl.offsetWidth || 150; // Estimate if not rendered yet
+                            const viewportWidth = window.innerWidth;
+                            const tooltipX = canvasRect.left + tooltip.caretX + 10;
+
+                            // Flip to left side if tooltip would overflow right edge
+                            if (tooltipX + tooltipWidth > viewportWidth - 20) {
+                                tooltipEl.style.left = (canvasRect.left + window.scrollX + tooltip.caretX - tooltipWidth - 10) + 'px';
+                            } else {
+                                tooltipEl.style.left = (canvasRect.left + window.scrollX + tooltip.caretX + 10) + 'px';
+                            }
                             tooltipEl.style.top = (canvasRect.top + window.scrollY + tooltip.caretY - 30) + 'px';
                         }
                     },
