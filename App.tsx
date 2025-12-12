@@ -18,13 +18,13 @@ import { usePayments } from './hooks/usePayments';
 import { useSessions } from './hooks/useSessions';
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCQOl8lcLsZBgYyEYasjIgVhf7RmGrL3_w",
-    authDomain: "pulseanalyzer-2545d.firebaseapp.com",
-    projectId: "pulseanalyzer-2545d",
-    storageBucket: "pulseanalyzer-2545d.firebasestorage.app",
-    messagingSenderId: "860609070068",
-    appId: "1:860609070068:web:48538c98e3073ff8b2afa1",
-    measurementId: "G-ZJJSWY3TMX"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Safe Initialize
