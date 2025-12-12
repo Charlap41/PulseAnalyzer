@@ -244,69 +244,71 @@ export const calculateSessionStats = (session: Session) => {
         }
     }
 
-    const analysisResults = visibleDatasets.map(ds => { // CHANGED: Include refDs to calculate its intrinsic stats (Dropouts, Stability)
-        const dsData = processForStats(ds);
-        const errors = [];
-        const dynamicErrors = [];
-        const refVals = [];
-        const dsVals = [];
-        let dropouts = 0;
+    const analysisResults = visibleDatasets
+        .filter(ds => ds.id !== session.referenceDatasetId) // Exclude reference device from rankings
+        .map(ds => { // Only compare non-reference devices
+            const dsData = processForStats(ds);
+            const errors = [];
+            const dynamicErrors = [];
+            const refVals = [];
+            const dsVals = [];
+            let dropouts = 0;
 
-        const dropoutDetails = [];
-        for (let i = 1; i < dsData.length; i++) {
-            const gap = dsData[i].t - dsData[i - 1].t;
-            if (gap > 1) {
-                dropouts++;
-                dropoutDetails.push({
-                    start: dsData[i - 1].t,
-                    end: dsData[i].t,
-                    duration: gap
-                });
+            const dropoutDetails = [];
+            for (let i = 1; i < dsData.length; i++) {
+                const gap = dsData[i].t - dsData[i - 1].t;
+                if (gap > 1) {
+                    dropouts++;
+                    dropoutDetails.push({
+                        start: dsData[i - 1].t,
+                        end: dsData[i].t,
+                        duration: gap
+                    });
+                }
             }
-        }
 
-        for (const p of dsData) {
-            if (refMap.has(p.t)) {
-                const refVal = refMap.get(p.t);
-                const err = p.hr - refVal;
-                errors.push(err);
-                refVals.push(refVal);
-                dsVals.push(p.hr);
-                if (dynamicTimestamps.has(p.t)) dynamicErrors.push(Math.abs(err));
+            for (const p of dsData) {
+                if (refMap.has(p.t)) {
+                    const refVal = refMap.get(p.t);
+                    const err = p.hr - refVal;
+                    errors.push(err);
+                    refVals.push(refVal);
+                    dsVals.push(p.hr);
+                    if (dynamicTimestamps.has(p.t)) dynamicErrors.push(Math.abs(err));
+                }
             }
-        }
 
-        const mae = errors.length > 0 ? calculateMean(errors.map(Math.abs)) : 0;
-        const stdDev = calculateSD(errors);
-        const rmse = calculateRMSE(errors);
-        const bias = calculateMean(errors);
-        const corr = calculatePearson(refVals, dsVals);
-        const dynMae = dynamicErrors.length > 0 ? calculateMean(dynamicErrors) : 0;
+            const mae = errors.length > 0 ? calculateMean(errors.map(Math.abs)) : 0;
+            const stdDev = calculateSD(errors);
+            const rmse = calculateRMSE(errors);
+            const bias = calculateMean(errors);
+            const corr = calculatePearson(refVals, dsVals);
+            const dynMae = dynamicErrors.length > 0 ? calculateMean(dynamicErrors) : 0;
 
-        const globalDuration = (dsData.length > 0) ? (dsData[dsData.length - 1].t - dsData[0].t) : 0;
-        // Total dropout duration
-        const totalDropoutTime = dropoutDetails.reduce((acc, d) => acc + d.duration, 0);
-        // Estimate integrity (Ratio of time WITH signal vs Total Time)
-        // If globalDuration is 0 (one point), integrity is 1
-        const integrity = globalDuration > 0 ? Math.max(0, 1 - (totalDropoutTime / globalDuration)) : 1;
+            const globalDuration = (dsData.length > 0) ? (dsData[dsData.length - 1].t - dsData[0].t) : 0;
+            // Total dropout duration
+            const totalDropoutTime = dropoutDetails.reduce((acc, d) => acc + d.duration, 0);
+            // Estimate integrity (Ratio of time WITH signal vs Total Time)
+            // If globalDuration is 0 (one point), integrity is 1
+            const integrity = globalDuration > 0 ? Math.max(0, 1 - (totalDropoutTime / globalDuration)) : 1;
 
-        const score = calculateTrustScore(corr, mae, stdDev, integrity);
+            const score = calculateTrustScore(corr, mae, stdDev, integrity);
 
-        return {
-            device: ds.name,
-            activity: session.type,
-            mae,
-            stdDevError: stdDev,
-            rmse,
-            bias,
-            correlation: corr,
-            dropouts,
-            dropoutDetails,
-            score,
-            dynamicMae: dynMae,
-            dataPoints: errors.length
-        } as AnalysisResult;
-    });
+            return {
+                device: ds.name,
+                activity: session.type,
+                mae,
+                stdDevError: stdDev,
+                rmse,
+                bias,
+                correlation: corr,
+                dropouts,
+                dropoutDetails,
+                score,
+                dynamicMae: dynMae,
+                dataPoints: errors.length
+            } as AnalysisResult;
+        });
 
     const refStats = {
         avgHR: Math.round(calculateMean(refData.map(d => d.hr))),

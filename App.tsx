@@ -943,7 +943,18 @@ const App: React.FC = () => {
                 : sessions;
 
             sessionsToAnalyze.forEach(s => {
-                if (s.analysisResults) allResults.push(...s.analysisResults);
+                if (s.analysisResults) {
+                    // Get reference device name for this session
+                    const refDs = s.datasets.find(d => d.id === s.referenceDatasetId);
+                    const refName = refDs?.name?.toLowerCase();
+
+                    // Filter out the reference device from results (it has perfect score against itself)
+                    const filteredResults = s.analysisResults.filter(r =>
+                        r.device.toLowerCase() !== refName &&
+                        !(r.correlation >= 0.9999 && r.mae < 0.01) // Also catch any self-comparisons by perfect metrics
+                    );
+                    allResults.push(...filteredResults);
+                }
             });
 
             if (allResults.length === 0) {
