@@ -16,30 +16,46 @@ export const LegalPage: React.FC<LegalPageProps> = ({ onBack, view }) => {
                         <p className="text-gray-600 dark:text-gray-400">Dernière mise à jour : 03 Décembre 2025</p>
 
                         <section className="space-y-3">
-                            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">1. Confidentialité des Données ("Privacy First")</h2>
+                            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">1. Traitement des Données</h2>
                             <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                                Pulse Analyzer est conçu avec une approche "Privacy First".
-                                <strong> Vos fichiers de données (FIT, GPX, TCX, CSV) sont traités exclusivement en local dans votre navigateur.</strong>
-                                Ils ne sont jamais envoyés sur nos serveurs pour analyse.
+                                <strong>Mode Découverte (gratuit, non connecté) :</strong> Vos fichiers de données (FIT, GPX, TCX, CSV) sont traités exclusivement en local dans votre navigateur. Ils ne sont pas envoyés sur nos serveurs.
+                            </p>
+                            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                                <strong>Utilisateurs connectés (Pass 24h, Abonnement Annuel) :</strong> Vos sessions et données d'analyse sont stockées de manière sécurisée sur notre infrastructure cloud (Firebase/Google Cloud) pour permettre la synchronisation entre appareils et la sauvegarde de vos analyses. Ces données sont chiffrées et accessibles uniquement par vous.
                             </p>
                         </section>
 
                         <section className="space-y-3">
                             <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">2. Données Collectées</h2>
                             <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                                Nous collectons uniquement les données nécessaires au fonctionnement de votre compte et des paiements :
+                                Nous collectons les données suivantes selon votre utilisation :
                             </p>
                             <ul className="list-disc pl-5 text-gray-600 dark:text-gray-400 space-y-1">
                                 <li>Adresse email (pour l'authentification).</li>
-                                <li>Informations de paiement (traitées de manière sécurisée par Stripe).</li>
-                                <li>Métadonnées de session (nom, date, type d'activité) si vous utilisez la synchronisation Cloud (optionnelle).</li>
+                                <li>Informations de paiement (traitées de manière sécurisée par Stripe, nous ne stockons pas vos données de carte).</li>
+                                <li>Sessions d'analyse (nom, date, type d'activité, données de fréquence cardiaque) pour les utilisateurs connectés.</li>
+                                <li>Résultats d'analyse IA (stockés pour consultation ultérieure).</li>
                             </ul>
                         </section>
 
                         <section className="space-y-3">
-                            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">3. Cookies</h2>
+                            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">3. Hébergement et Sécurité</h2>
+                            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                                Vos données sont hébergées sur Firebase (Google Cloud Platform), dans des data centers européens conformes au RGPD. Les transferts sont chiffrés via HTTPS/TLS.
+                            </p>
+                        </section>
+
+                        <section className="space-y-3">
+                            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">4. Cookies</h2>
                             <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
                                 Nous utilisons uniquement des cookies techniques essentiels pour maintenir votre session active et mémoriser vos préférences (langue, thème).
+                            </p>
+                        </section>
+
+                        <section className="space-y-3">
+                            <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">5. Vos Droits</h2>
+                            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                                Conformément au RGPD, vous pouvez demander l'accès, la modification ou la suppression de vos données en nous contactant à support@pulseanalyzer.com.
                             </p>
                         </section>
                     </div>
