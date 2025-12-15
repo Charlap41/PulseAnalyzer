@@ -1,0 +1,9 @@
+# Robots.txt for Pulse Analyzer
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://pulse-analyzer.netlify.app/sitemap.xml
+
+# Disallow admin/API paths (if any)
+Disallow: /api/
