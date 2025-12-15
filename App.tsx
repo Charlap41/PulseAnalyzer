@@ -557,6 +557,18 @@ const App: React.FC = () => {
         setSessionModalOpen(true);
     }
 
+    // Helper function to format time axis - shows h:mm:ss for >1h, otherwise m:ss
+    const formatTimeAxis = (seconds: number): string => {
+        const hours = Math.floor(seconds / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        const secs = Math.floor(seconds % 60);
+
+        if (hours > 0) {
+            return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
     const processDataset = (ds: Dataset, globalStart: number, customSmoothing?: number) => {
         const sm = customSmoothing !== undefined ? customSmoothing : smoothing;
         let processed = [];
@@ -641,9 +653,7 @@ const App: React.FC = () => {
                             ticks: {
                                 color: isDarkMode ? '#aaa' : '#555',
                                 callback: function (value: number) {
-                                    const mins = Math.floor(value / 60);
-                                    const secs = Math.round(value % 60);
-                                    return `${mins}:${secs.toString().padStart(2, '0')}`;
+                                    return formatTimeAxis(value);
                                 }
                             },
                             grid: { color: isDarkMode ? '#333' : '#eee' }
@@ -936,11 +946,7 @@ const App: React.FC = () => {
                         grid: { color: gridColor },
                         ticks: {
                             color: textColor,
-                            callback: (v: number) => {
-                                const m = Math.floor(v / 60);
-                                const s = Math.floor(v % 60);
-                                return `${m}:${s < 10 ? '0' + s : s}`;
-                            }
+                            callback: (v: number) => formatTimeAxis(v)
                         }
                     },
                     y: {
