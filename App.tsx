@@ -536,9 +536,10 @@ const App: React.FC = () => {
         }
 
         // STRICT LIMITS
-        // Free: Max 1 session
-        if (userPlan === 'free' && sessions.length >= 1) {
-            console.log("DEBUG: Blocked by Free Limit");
+        // Free: Max 1 session EVER (check creationHistory, not current sessions)
+        // This prevents abuse by deleting and recreating sessions
+        if (userPlan === 'free' && creationHistory.length >= 1) {
+            console.log("DEBUG: Blocked by Free Limit (creationHistory)", { historyLength: creationHistory.length });
             setLimitModalOpen(true);
             return;
         }
