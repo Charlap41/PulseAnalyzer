@@ -85,7 +85,10 @@ const App: React.FC = () => {
 
     // View State
     const [view, setView] = useState<ViewState>('landing');
-    const [lang, setLang] = useState<Language>('fr');
+    const [lang, setLang] = useState<Language>(() => {
+        // Detect browser language, default to English if not French
+        return navigator.language.startsWith('fr') ? 'fr' : 'en';
+    });
     const [activeTab, setActiveTab] = useState<'session' | 'dashboard'>('session');
 
     // Demo Mode State
