@@ -5,10 +5,10 @@ import 'firebase/compat/firestore';
 
 // --- CONFIGURATION STRIPE ---
 export const STRIPE_PRICES = {
-    // ID du PRIX pour le Pass 24h
-    DAY_PASS: import.meta.env.VITE_STRIPE_PRICE_DAY_PASS || "price_1SYOweHTJAkamQTShBq7zk12",
-    // ID du PRIX pour l'Expert Annuel
-    ANNUAL: import.meta.env.VITE_STRIPE_PRICE_ANNUAL || "price_1SZxYMHTJAkamQTS2VzEQyve"
+    // ID du PRIX pour le Pass 24h (LIVE)
+    DAY_PASS: import.meta.env.VITE_STRIPE_PRICE_DAY_PASS || "price_1SeZJiHTJAkamQTSVTCaPPI4",
+    // ID du PRIX pour l'Expert Annuel (LIVE)
+    ANNUAL: import.meta.env.VITE_STRIPE_PRICE_ANNUAL || "price_1SeZKhHTJAkamQTSW7xgovLR"
 };
 
 export const createCheckoutSession = async (priceId: string): Promise<string> => {

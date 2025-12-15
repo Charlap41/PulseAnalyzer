@@ -18,14 +18,16 @@ import { usePayments } from './hooks/usePayments';
 import { useSessions } from './hooks/useSessions';
 
 const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId: import.meta.env.VITE_FIREBASE_APP_ID,
-    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCQOl8lcLsZBgYyEYasjIgVhf7RmGrL3_w",
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "pulseanalyzer-2545d.firebaseapp.com",
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "pulseanalyzer-2545d",
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "pulseanalyzer-2545d.firebasestorage.app",
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "860609070068",
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:860609070068:web:48538c98e3073ff8b2afa1",
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-ZJJSWY3TMX"
 };
+
+console.log("Firebase Config loaded:", firebaseConfig.apiKey ? "API Key present" : "API Key MISSING");
 
 // Safe Initialize
 let auth: firebase.auth.Auth | undefined;
@@ -34,15 +36,16 @@ let analytics: firebase.analytics.Analytics | undefined;
 
 try {
     if (!firebase.apps.length) {
-        if (firebaseConfig.apiKey) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        console.log("Initializing Firebase...");
+        firebase.initializeApp(firebaseConfig);
+        console.log("Firebase initialized successfully");
     }
     // Only access if initialized
     if (firebase.apps.length) {
         auth = firebase.auth();
         db = firebase.firestore();
         analytics = firebase.analytics();
+        console.log("Firebase services ready");
     }
 } catch (e) {
     console.error("Firebase Init Error:", e);
@@ -91,6 +94,12 @@ const App: React.FC = () => {
 
     // Compute Effective Plan
     const userPlan = isDemoMode ? 'annual' : realUserPlan;
+
+    // DEBUG: Log user and plan state
+    useEffect(() => {
+        console.log("App: currentUser =", currentUser?.uid, currentUser?.email);
+        console.log("App: realUserPlan =", realUserPlan, "| userPlan =", userPlan);
+    }, [currentUser, realUserPlan, userPlan]);
 
     // Sessions Hook
     const {
@@ -254,7 +263,15 @@ const App: React.FC = () => {
 
         demoSessions.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
-        // HOTFIX stats (omitted for brevity, assume data is good or existing logic applies but we need to inject it into hook state)
+        // Recalculate analysisResults to ensure dropoutDetails are populated
+        demoSessions = demoSessions.map(session => {
+            const stats = calculateSessionStats(session);
+            if (stats) {
+                return { ...session, analysisResults: stats.analysisResults };
+            }
+            return session;
+        });
+
         // Since we are using the hook, we need to call setSessions from the hook
         setSessions(demoSessions);
 
@@ -673,16 +690,16 @@ const App: React.FC = () => {
         const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
         const textColor = isDark ? '#999' : '#666';
 
-        // Linear interpolation helper
-        const interpolateY = (data: { x: number, y: number }[], targetX: number): number | null => {
+        // Linear interpolation helper - returns null if in a gap (dropout)
+        const interpolateY = (data: { x: number, y: number | null }[], targetX: number): number | null => {
             if (!data || data.length === 0) return null;
 
             let lowerIdx = -1;
             let upperIdx = -1;
 
             for (let i = 0; i < data.length; i++) {
-                if (data[i].x <= targetX) lowerIdx = i;
-                if (data[i].x >= targetX && upperIdx === -1) {
+                if (data[i].x <= targetX && data[i].y !== null) lowerIdx = i;
+                if (data[i].x >= targetX && data[i].y !== null && upperIdx === -1) {
                     upperIdx = i;
                     break;
                 }
@@ -693,10 +710,18 @@ const App: React.FC = () => {
             if (upperIdx === -1) return data[lowerIdx].y;
             if (lowerIdx === upperIdx) return data[lowerIdx].y;
 
+            // Check if there's a null (gap) between lower and upper
+            for (let i = lowerIdx + 1; i < upperIdx; i++) {
+                if (data[i].y === null) {
+                    // We're in a gap - don't interpolate
+                    return null;
+                }
+            }
+
             const x0 = data[lowerIdx].x;
-            const y0 = data[lowerIdx].y;
+            const y0 = data[lowerIdx].y!;
             const x1 = data[upperIdx].x;
-            const y1 = data[upperIdx].y;
+            const y1 = data[upperIdx].y!;
 
             if (x1 === x0) return y0;
             const t = (targetX - x0) / (x1 - x0);
@@ -794,16 +819,16 @@ const App: React.FC = () => {
                             const yScale = chart.scales.y;
                             const dataX = xScale.getValueForPixel(tooltip.caretX);
 
-                            // Helper function to interpolate Y at given X
-                            const interpolateY = (data: { x: number, y: number }[], targetX: number): number | null => {
+                            // Helper function to interpolate Y at given X - returns null if in a gap
+                            const interpolateY = (data: { x: number, y: number | null }[], targetX: number): number | null => {
                                 if (!data || data.length === 0) return null;
 
                                 let lowerIdx = -1;
                                 let upperIdx = -1;
 
                                 for (let i = 0; i < data.length; i++) {
-                                    if (data[i].x <= targetX) lowerIdx = i;
-                                    if (data[i].x >= targetX && upperIdx === -1) {
+                                    if (data[i].x <= targetX && data[i].y !== null) lowerIdx = i;
+                                    if (data[i].x >= targetX && data[i].y !== null && upperIdx === -1) {
                                         upperIdx = i;
                                         break;
                                     }
@@ -814,10 +839,17 @@ const App: React.FC = () => {
                                 if (upperIdx === -1) return data[lowerIdx].y;
                                 if (lowerIdx === upperIdx) return data[lowerIdx].y;
 
+                                // Check if there's a null (gap) between lower and upper
+                                for (let i = lowerIdx + 1; i < upperIdx; i++) {
+                                    if (data[i].y === null) {
+                                        return null;
+                                    }
+                                }
+
                                 const x0 = data[lowerIdx].x;
-                                const y0 = data[lowerIdx].y;
+                                const y0 = data[lowerIdx].y!;
                                 const x1 = data[upperIdx].x;
-                                const y1 = data[upperIdx].y;
+                                const y1 = data[upperIdx].y!;
 
                                 if (x1 === x0) return y0;
                                 const t = (targetX - x0) / (x1 - x0);
@@ -2129,6 +2161,9 @@ const App: React.FC = () => {
                                     }
                                     setAuthModalOpen(false);
                                     setView('app');
+                                    if (authMode === 'register') {
+                                        setShowWelcomeModal(true);
+                                    }
                                 } catch (e: any) { setAuthError(e.message); }
                             }} className="w-full py-3 text-sm font-bold bg-brand-500 text-brand-dark rounded-lg hover:bg-brand-600 transition shadow-lg shadow-brand-500/20">{text.modals.btnValidate}</button>
 
@@ -2293,10 +2328,14 @@ const App: React.FC = () => {
                                     </div>
                                 )}
                                 <h3 className="text-lg font-bold text-brand-400 mb-1">{text.pricing.annualPass}</h3>
-                                <div className="flex items-baseline gap-1 mb-1">
+                                <div className="flex items-baseline gap-2 mb-1">
+                                    <span className="text-lg text-gray-500 line-through">{text.pricing.annualPassOldPrice}</span>
                                     <span className="text-3xl font-bold text-white">{text.pricing.annualPassPrice}</span>
                                     <span className="text-gray-500 text-sm">{text.pricing.year}</span>
                                 </div>
+                                <span className="inline-block bg-gradient-to-r from-brand-500 to-brand-400 text-black text-[9px] font-bold px-2 py-0.5 rounded-full mb-2 animate-pulse">
+                                    🚀 {text.pricing.launchBadge}
+                                </span>
                                 <p className="text-xs text-gray-400 mb-4 flex-grow">{text.pricing.annualPassDesc}</p>
                                 <ul className="space-y-2 text-xs text-gray-300 mb-4">
                                     <li className="flex items-center gap-2"><i className="fa-solid fa-check text-brand-500 w-4"></i> {text.pricing.features.sessionsUnlim}</li>

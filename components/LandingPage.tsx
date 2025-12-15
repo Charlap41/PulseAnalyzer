@@ -387,10 +387,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onEnterDem
                                 <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-brand-500/5 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2"></div>
 
                                 <h3 className="text-xl font-bold text-brand-400 mb-2">{pricing.annualPass}</h3>
-                                <div className="flex items-baseline justify-center gap-1 mb-6">
+                                <div className="flex items-baseline justify-center gap-2 mb-2">
+                                    <span className="text-lg text-gray-500 line-through">{pricing.annualPassOldPrice}</span>
                                     <span className="text-4xl font-bold text-white">{pricing.annualPassPrice}</span>
                                     <span className="text-gray-500">{pricing.year}</span>
                                 </div>
+                                <span className="inline-block bg-gradient-to-r from-brand-500 to-brand-400 text-black text-[10px] font-bold px-3 py-1 rounded-full mb-4 animate-pulse shadow-lg shadow-brand-500/30">
+                                    🚀 {pricing.launchBadge}
+                                </span>
                                 <p className="text-sm text-gray-400 mb-8 border-b border-white/5 pb-8 w-full">{pricing.annualPassDesc}</p>
 
                                 <ul className="space-y-4 text-sm text-white mb-8 relative z-10 text-left w-full pl-4">

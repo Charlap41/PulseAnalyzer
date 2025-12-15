@@ -43,7 +43,9 @@ export const t = (lang: Language) => {
                 dayPassPrice: "4.99€",
                 dayPassDesc: "Accès illimité à toutes les fonctionnalités pendant 24h.",
                 annualPass: "Expert Annuel",
-                annualPassPrice: "19.99€",
+                annualPassPrice: "29.99€",
+                annualPassOldPrice: "39.99€",
+                launchBadge: "Prix de lancement",
                 annualPassDesc: "Pour les coachs, testeurs et passionnés de data.",
                 year: "/an",
                 features: {
@@ -289,7 +291,9 @@ export const t = (lang: Language) => {
                 dayPassPrice: "€4.99",
                 dayPassDesc: "Unlimited access to all features for 24h.",
                 annualPass: "Annual Expert",
-                annualPassPrice: "€19.99",
+                annualPassPrice: "€29.99",
+                annualPassOldPrice: "€39.99",
+                launchBadge: "Launch Price",
                 annualPassDesc: "For coaches, reviewers, and data geeks.",
                 year: "/year",
                 features: {
