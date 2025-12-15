@@ -629,6 +629,16 @@ const App: React.FC = () => {
             // Use the same processDataset function as the main chart
             const chartDatasets = visibleDatasets.map(ds => processDataset(ds, globalStart));
 
+            // Calculate max X from all datasets to prevent white space at end
+            let maxX = 0;
+            chartDatasets.forEach(ds => {
+                ds.data.forEach((point: { x: number, y: number | null }) => {
+                    if (point.y !== null && point.x > maxX) {
+                        maxX = point.x;
+                    }
+                });
+            });
+
             const isDarkMode = document.documentElement.classList.contains('dark');
 
             // @ts-ignore
@@ -649,6 +659,7 @@ const App: React.FC = () => {
                     scales: {
                         x: {
                             type: 'linear',
+                            max: maxX, // Limit to actual data range - no white space at end
                             title: { display: true, text: 'Temps (min)', color: isDarkMode ? '#aaa' : '#555' },
                             ticks: {
                                 color: isDarkMode ? '#aaa' : '#555',
@@ -695,6 +706,16 @@ const App: React.FC = () => {
         if (!ctx) return;
 
         const chartDatasets = visibleDatasets.map(ds => processDataset(ds, globalStart));
+
+        // Calculate max X from all datasets to prevent white space at end
+        let maxX = 0;
+        chartDatasets.forEach(ds => {
+            ds.data.forEach((point: { x: number, y: number | null }) => {
+                if (point.y !== null && point.x > maxX) {
+                    maxX = point.x;
+                }
+            });
+        });
 
         if (chartInstance.current) {
             chartInstance.current.destroy();
@@ -943,6 +964,7 @@ const App: React.FC = () => {
                 scales: {
                     x: {
                         type: 'linear',
+                        max: maxX, // Limit to actual data range - no white space at end
                         grid: { color: gridColor },
                         ticks: {
                             color: textColor,
