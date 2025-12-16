@@ -1234,8 +1234,8 @@ const App: React.FC = () => {
     // Pan: positive value moves chart content in that direction, so to "go left" (see earlier content), we pan content right (positive x)
     const panLeft = () => chartInstance.current?.pan({ x: 100 });  // See content on the left
     const panRight = () => chartInstance.current?.pan({ x: -100 }); // See content on the right
-    const panUp = () => chartInstance.current?.pan({ y: 100 });    // See content above
-    const panDown = () => chartInstance.current?.pan({ y: -100 }); // See content below
+    const panUp = () => chartInstance.current?.pan({ y: 30 });     // See content above (small step)
+    const panDown = () => chartInstance.current?.pan({ y: -30 });  // See content below (small step)
 
     // 5. Dashboard View Logic (Auto-Analysis with Smart Caching)
     useEffect(() => {
@@ -3455,14 +3455,14 @@ const App: React.FC = () => {
                                                                 <i className="fa-solid fa-expand"></i>
                                                             </button>
                                                         </div>
-                                                        {/* D-Pad Navigation */}
-                                                        <div className="flex flex-col items-center gap-0.5">
-                                                            <button onClick={panUp} className="w-6 h-6 flex items-center justify-center rounded bg-gray-100/80 dark:bg-black/50 text-gray-700 dark:text-gray-200 hover:bg-white text-[10px] shadow" title={lang === 'fr' ? 'Haut' : 'Up'}><i className="fa-solid fa-chevron-up"></i></button>
-                                                            <div className="flex gap-0.5">
-                                                                <button onClick={panLeft} className="w-6 h-6 flex items-center justify-center rounded bg-gray-100/80 dark:bg-black/50 text-gray-700 dark:text-gray-200 hover:bg-white text-[10px] shadow" title={lang === 'fr' ? 'Gauche' : 'Left'}><i className="fa-solid fa-chevron-left"></i></button>
-                                                                <button onClick={panRight} className="w-6 h-6 flex items-center justify-center rounded bg-gray-100/80 dark:bg-black/50 text-gray-700 dark:text-gray-200 hover:bg-white text-[10px] shadow" title={lang === 'fr' ? 'Droite' : 'Right'}><i className="fa-solid fa-chevron-right"></i></button>
+                                                        {/* Subtle D-Pad Navigation */}
+                                                        <div className="flex flex-col items-center opacity-60 hover:opacity-100 transition-opacity">
+                                                            <button onClick={panUp} className="w-5 h-5 flex items-center justify-center rounded-full bg-white/50 dark:bg-white/10 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-white/20 text-[8px] backdrop-blur-sm" title={lang === 'fr' ? 'Haut' : 'Up'}><i className="fa-solid fa-chevron-up"></i></button>
+                                                            <div className="flex">
+                                                                <button onClick={panLeft} className="w-5 h-5 flex items-center justify-center rounded-full bg-white/50 dark:bg-white/10 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-white/20 text-[8px] backdrop-blur-sm" title={lang === 'fr' ? 'Gauche' : 'Left'}><i className="fa-solid fa-chevron-left"></i></button>
+                                                                <button onClick={panRight} className="w-5 h-5 flex items-center justify-center rounded-full bg-white/50 dark:bg-white/10 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-white/20 text-[8px] backdrop-blur-sm" title={lang === 'fr' ? 'Droite' : 'Right'}><i className="fa-solid fa-chevron-right"></i></button>
                                                             </div>
-                                                            <button onClick={panDown} className="w-6 h-6 flex items-center justify-center rounded bg-gray-100/80 dark:bg-black/50 text-gray-700 dark:text-gray-200 hover:bg-white text-[10px] shadow" title={lang === 'fr' ? 'Bas' : 'Down'}><i className="fa-solid fa-chevron-down"></i></button>
+                                                            <button onClick={panDown} className="w-5 h-5 flex items-center justify-center rounded-full bg-white/50 dark:bg-white/10 text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-white/20 text-[8px] backdrop-blur-sm" title={lang === 'fr' ? 'Bas' : 'Down'}><i className="fa-solid fa-chevron-down"></i></button>
                                                         </div>
                                                         {/* Zoom Controls */}
                                                         <div className="flex flex-col gap-1">
