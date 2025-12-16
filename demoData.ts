@@ -27854,7 +27854,8 @@ export const DEMO_SESSION: Session = {
       "correlation": 0.999,
       "dropouts": 0,
       "dynamicMae": 0.54,
-      "dataPoints": 1389
+      "dataPoints": 1389,
+      "score": 93
     },
     {
       "device": "CorosHRM",
@@ -27866,7 +27867,8 @@ export const DEMO_SESSION: Session = {
       "correlation": 0.996,
       "dropouts": 0,
       "dynamicMae": 0.8,
-      "dataPoints": 1390
+      "dataPoints": 1390,
+      "score": 88
     },
     {
       "device": "CorosPace3",
@@ -27878,7 +27880,8 @@ export const DEMO_SESSION: Session = {
       "correlation": 0.605,
       "dropouts": 0,
       "dynamicMae": 10.5,
-      "dataPoints": 1370
+      "dataPoints": 1370,
+      "score": 0
     },
     {
       "device": "GalaxyWatch4",
@@ -27890,7 +27893,8 @@ export const DEMO_SESSION: Session = {
       "correlation": 0.99,
       "dropouts": 0,
       "dynamicMae": 1.59,
-      "dataPoints": 1370
+      "dataPoints": 1370,
+      "score": 79
     }
   ],
   "analysisText": "## 🎯 Synthèse de l'Analyse Comparative\n\nCette analyse compare **4 dispositifs** de mesure cardiaque lors d'une **course à pied** par rapport à la référence **Polar H10** (ceinture thoracique).\n\n---\n\n### 📊 Classement par Fiabilité\n\n1. **AirpodsPro3** 🥇 — Score: **93/100** | Corrélation: 0.999 | MAE: 0.54 bpm\n2. **CorosHRM** 🥇 — Score: **88/100** | Corrélation: 0.996 | MAE: 0.8 bpm\n3. **CorosPace3** ⚠️ — Score: **0/100** | Corrélation: 0.605 | MAE: 10.5 bpm\n4. **GalaxyWatch4** 🥈 — Score: **79/100** | Corrélation: 0.99 | MAE: 1.59 bpm\n\n---\n\n### 🔍 Observations Détaillées\n\n#### AirpodsPro3\nExcellente performance avec une corrélation très élevée (0.999). Ce dispositif peut être utilisé en toute confiance pour le suivi d'entraînement.\n- Erreur moyenne absolue: **0.54 bpm**\n- Écart-type: **0.9 bpm**\n- RMSE: **0.9 bpm**\n- Biais: **+0.06 bpm**\n\n#### CorosHRM\nExcellente performance avec une corrélation très élevée (0.996). Ce dispositif peut être utilisé en toute confiance pour le suivi d'entraînement.\n- Erreur moyenne absolue: **0.8 bpm**\n- Écart-type: **1.78 bpm**\n- RMSE: **1.87 bpm**\n- Biais: **-0.56 bpm**\n\n#### CorosPace3\nFiabilité insuffisante pour un usage précis. Des écarts significatifs ont été détectés (Biais: -7.96 bpm).\n- Erreur moyenne absolue: **10.5 bpm**\n- Écart-type: **14.43 bpm**\n- RMSE: **16.48 bpm**\n- Biais: **-7.96 bpm**\n\n#### GalaxyWatch4\nBonne précision générale avec quelques écarts occasionnels. Convient pour un suivi régulier mais attention aux valeurs extrêmes.\n- Erreur moyenne absolue: **1.59 bpm**\n- Écart-type: **2.46 bpm**\n- RMSE: **2.49 bpm**\n- Biais: **+0.41 bpm**\n\n\n---\n\n### 💡 Recommandations\n\n1. **Pour l'entraînement intensif**: Privilégiez les dispositifs avec un score > 80\n2. **Pour le suivi quotidien**: Un score > 60 est généralement suffisant\n3. **Zones cardiaques**: Utilisez la référence (Polar H10) pour calibrer vos zones\n\n> ⚡ *Cette analyse a été générée automatiquement par Pulse Analyzer AI*",
