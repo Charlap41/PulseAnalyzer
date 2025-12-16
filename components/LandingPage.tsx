@@ -1,7 +1,42 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Language } from '../types';
 import { t } from '../translations';
+
+// Hook for scroll-triggered animations using IntersectionObserver
+const useScrollAnimation = () => {
+    const observerRef = useRef<IntersectionObserver | null>(null);
+
+    useEffect(() => {
+        // Check for reduced motion preference
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (prefersReducedMotion) return;
+
+        observerRef.current = new IntersectionObserver(
+            (entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animate-in');
+                        // Stop observing once animated
+                        observerRef.current?.unobserve(entry.target);
+                    }
+                });
+            },
+            {
+                threshold: 0.1, // Trigger when 10% visible
+                rootMargin: '0px 0px -50px 0px' // Trigger slightly before fully in view
+            }
+        );
+
+        // Observe all elements with scroll-animate class
+        const elements = document.querySelectorAll('.scroll-animate');
+        elements.forEach((el) => observerRef.current?.observe(el));
+
+        return () => {
+            observerRef.current?.disconnect();
+        };
+    }, []);
+};
 
 interface LandingPageProps {
     onEnterApp: () => void;
@@ -99,6 +134,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onEnterDem
     const pricing = t(lang).pricing;
     const exportInfo = t(lang).export.infoModal;
     const [showExportInfo, setShowExportInfo] = useState(false);
+
+    // Activate scroll animations
+    useScrollAnimation();
 
     return (
         <div className="min-h-screen bg-[#050505] text-white selection:bg-brand-500 selection:text-black overflow-x-hidden relative flex flex-col font-sans">
@@ -212,7 +250,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onEnterDem
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
                         {/* 1. Auto-Sync (Large - 2 cols) */}
-                        <div className="md:col-span-2 p-8 rounded-3xl bg-[#0a0a0a] border border-white/10 hover:border-brand-500/30 transition-colors group relative overflow-hidden flex flex-col items-center justify-center text-center">
+                        <div className="scroll-animate fade-up stagger-1 md:col-span-2 p-8 rounded-3xl bg-[#0a0a0a] border border-white/10 hover:border-brand-500/30 transition-colors group relative overflow-hidden flex flex-col items-center justify-center text-center">
                             <div className="absolute inset-0 bg-gradient-to-br from-brand-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                             <div className="w-20 h-20 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-500 mb-6 group-hover:scale-110 transition-transform duration-500">
                                 <i className="fa-solid fa-rotate text-3xl"></i>
@@ -222,7 +260,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onEnterDem
                         </div>
 
                         {/* 2. Proprietary Algo (Tall/Square - 1 col) */}
-                        <div className="p-8 rounded-3xl bg-[#0a0a0a] border border-white/10 hover:border-blue-500/30 transition-colors group relative overflow-hidden flex flex-col items-center justify-center text-center">
+                        <div className="scroll-animate fade-up stagger-2 p-8 rounded-3xl bg-[#0a0a0a] border border-white/10 hover:border-blue-500/30 transition-colors group relative overflow-hidden flex flex-col items-center justify-center text-center">
                             <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                             <div className="w-16 h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400 mb-6 group-hover:scale-110 transition-transform duration-500">
                                 <i className="fa-solid fa-microchip text-2xl"></i>
@@ -232,7 +270,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onEnterDem
                         </div>
 
                         {/* NEW. AI Chat (Small - 1 col) */}
-                        <div className="p-8 rounded-3xl bg-[#0a0a0a] border border-white/10 hover:border-indigo-500/30 transition-colors group relative overflow-hidden flex flex-col items-center justify-center text-center">
+                        <div className="scroll-animate fade-up stagger-3 p-8 rounded-3xl bg-[#0a0a0a] border border-white/10 hover:border-indigo-500/30 transition-colors group relative overflow-hidden flex flex-col items-center justify-center text-center">
                             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                             <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 mb-6 group-hover:scale-110 transition-transform duration-500">
                                 <i className="fa-solid fa-comments text-2xl"></i>
@@ -242,7 +280,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onEnterDem
                         </div>
 
                         {/* 3. AI Analysis (Large - 2 cols) */}
-                        <div className="md:col-span-2 p-8 rounded-3xl bg-[#0a0a0a] border border-white/10 hover:border-purple-500/30 transition-colors group relative overflow-hidden flex flex-col items-center justify-center text-center">
+                        <div className="scroll-animate fade-up stagger-4 md:col-span-2 p-8 rounded-3xl bg-[#0a0a0a] border border-white/10 hover:border-purple-500/30 transition-colors group relative overflow-hidden flex flex-col items-center justify-center text-center">
                             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                             <div className="w-20 h-20 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 mb-6 group-hover:scale-110 transition-transform duration-500">
                                 <i className="fa-solid fa-wand-magic-sparkles text-3xl"></i>
@@ -252,7 +290,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onEnterDem
                         </div>
 
                         {/* 4. Multi-Format (Large - 2 cols) */}
-                        <div className="md:col-span-2 p-8 rounded-3xl bg-[#0a0a0a] border border-white/10 hover:border-green-500/30 transition-colors group relative overflow-hidden flex flex-col items-center justify-center text-center">
+                        <div className="scroll-animate fade-up stagger-5 md:col-span-2 p-8 rounded-3xl bg-[#0a0a0a] border border-white/10 hover:border-green-500/30 transition-colors group relative overflow-hidden flex flex-col items-center justify-center text-center">
                             <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                             <div className="w-20 h-20 rounded-2xl bg-green-500/10 flex items-center justify-center text-green-500 mb-6 group-hover:scale-110 transition-transform duration-500">
                                 <i className="fa-solid fa-file-csv text-3xl"></i>
@@ -262,7 +300,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onEnterDem
                         </div>
 
                         {/* 5. Advanced Metrics (Tall/Square - 1 col) */}
-                        <div className="p-8 rounded-3xl bg-[#0a0a0a] border border-white/10 hover:border-pink-500/30 transition-colors group relative overflow-hidden flex flex-col items-center justify-center text-center">
+                        <div className="scroll-animate fade-up stagger-6 p-8 rounded-3xl bg-[#0a0a0a] border border-white/10 hover:border-pink-500/30 transition-colors group relative overflow-hidden flex flex-col items-center justify-center text-center">
                             <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                             <div className="w-16 h-16 rounded-2xl bg-pink-500/10 flex items-center justify-center text-pink-400 mb-6 group-hover:scale-110 transition-transform duration-500">
                                 <i className="fa-solid fa-chart-area text-2xl"></i>
@@ -272,7 +310,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onEnterDem
                         </div>
 
                         {/* 4. Pro Exports (Large - 3 cols - FULL WIDTH) */}
-                        <div className="md:col-span-3 p-0 rounded-3xl bg-[#0a0a0a] border border-white/10 hover:border-orange-500/30 transition-colors group relative overflow-hidden flex flex-col md:flex-row">
+                        <div className="scroll-animate fade-up stagger-1 md:col-span-3 p-0 rounded-3xl bg-[#0a0a0a] border border-white/10 hover:border-orange-500/30 transition-colors group relative overflow-hidden flex flex-col md:flex-row">
                             <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
 
                             <div className="flex-1 z-10 flex flex-col items-center md:items-start justify-center p-8">
@@ -341,7 +379,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onEnterDem
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
 
                         {/* Free Pass */}
-                        <div className="p-1 rounded-3xl bg-gradient-to-b from-white/5 to-transparent">
+                        <div className="scroll-animate fade-left stagger-1 p-1 rounded-3xl bg-gradient-to-b from-white/5 to-transparent">
                             <div className="h-full bg-[#050505] rounded-[22px] p-8 relative overflow-hidden text-center flex flex-col items-center">
                                 <h3 className="text-xl font-bold text-gray-400 mb-2">{pricing.freePass}</h3>
                                 <div className="flex items-baseline justify-center gap-1 mb-6">
@@ -365,7 +403,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onEnterDem
                         </div>
 
                         {/* 24h Pass */}
-                        <div className="p-1 rounded-3xl bg-gradient-to-b from-white/20 to-transparent">
+                        <div className="scroll-animate fade-up stagger-2 p-1 rounded-3xl bg-gradient-to-b from-white/20 to-transparent">
                             <div className="h-full bg-[#050505] rounded-[22px] p-8 relative overflow-hidden text-center flex flex-col items-center">
                                 <h3 className="text-xl font-bold text-white mb-2">{pricing.dayPass}</h3>
                                 <div className="flex items-baseline justify-center gap-1 mb-6">
@@ -388,7 +426,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onEnterDem
                         </div>
 
                         {/* Annual Pass */}
-                        <div className="p-1 rounded-3xl bg-gradient-to-b from-brand-500 to-transparent shadow-[0_0_50px_rgba(0,255,157,0.15)] relative">
+                        <div className="scroll-animate fade-right stagger-3 p-1 rounded-3xl bg-gradient-to-b from-brand-500 to-transparent shadow-[0_0_50px_rgba(0,255,157,0.15)] relative">
                             <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-brand-500 text-black text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest z-20 shadow-[0_0_20px_rgba(0,255,157,0.5)]">{pricing.mostPopular}</div>
 
                             <div className="h-full bg-[#050505] rounded-[22px] p-8 relative overflow-hidden text-center flex flex-col items-center">
