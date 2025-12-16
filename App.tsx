@@ -744,6 +744,8 @@ const App: React.FC = () => {
                                 const xScale = chart.scales.x;
                                 const dataX = tooltip.caretX ? xScale.getValueForPixel(tooltip.caretX) : undefined;
 
+                                // Find or create tooltip inside the chart container (so it rotates with the chart)
+                                const chartContainer = chart.canvas.parentElement;
                                 let tooltipEl = document.getElementById('fullscreen-tooltip-custom');
                                 if (!tooltipEl) {
                                     tooltipEl = document.createElement('div');
@@ -760,7 +762,13 @@ const App: React.FC = () => {
                                         z-index: 10000;
                                         box-shadow: 0 4px 15px rgba(0,0,0,0.4);
                                     `;
-                                    document.body.appendChild(tooltipEl);
+                                    // Append to chart container instead of body
+                                    if (chartContainer) {
+                                        chartContainer.style.position = 'relative';
+                                        chartContainer.appendChild(tooltipEl);
+                                    } else {
+                                        document.body.appendChild(tooltipEl);
+                                    }
                                 }
 
                                 tooltipEl.style.background = isDarkMode ? 'rgba(15,15,15,0.95)' : 'rgba(255,255,255,0.95)';
@@ -789,17 +797,18 @@ const App: React.FC = () => {
                                 tooltipEl.innerHTML = html;
                                 tooltipEl.style.opacity = '1';
 
-                                const canvasRect = chart.canvas.getBoundingClientRect();
+                                // Position relative to the canvas within the container
                                 const tooltipWidth = tooltipEl.offsetWidth || 180;
-                                const viewportWidth = window.innerWidth;
-                                const tooltipX = canvasRect.left + tooltip.caretX + 15;
+                                const canvasWidth = chart.canvas.offsetWidth;
+                                const tooltipX = tooltip.caretX + 15;
 
-                                if (tooltipX + tooltipWidth > viewportWidth - 20) {
-                                    tooltipEl.style.left = (canvasRect.left + window.scrollX + tooltip.caretX - tooltipWidth - 15) + 'px';
+                                // Flip to left side if would overflow
+                                if (tooltipX + tooltipWidth > canvasWidth - 20) {
+                                    tooltipEl.style.left = (tooltip.caretX - tooltipWidth - 15) + 'px';
                                 } else {
-                                    tooltipEl.style.left = (canvasRect.left + window.scrollX + tooltip.caretX + 15) + 'px';
+                                    tooltipEl.style.left = tooltipX + 'px';
                                 }
-                                tooltipEl.style.top = (canvasRect.top + window.scrollY + tooltip.caretY - 40) + 'px';
+                                tooltipEl.style.top = Math.max(10, tooltip.caretY - 40) + 'px';
                             }
                         }
                     },
