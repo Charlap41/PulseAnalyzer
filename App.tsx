@@ -720,11 +720,53 @@ const App: React.FC = () => {
                 }
             };
 
+            // Watermark plugin for fullscreen chart (free and 24h pass users only)
+            const fullscreenWatermarkPlugin = {
+                id: 'fullscreenWatermark',
+                afterDraw: (chart: any) => {
+                    if (userPlan === 'annual') return; // No watermark for annual users
+
+                    const ctx = chart.ctx;
+                    const chartArea = chart.chartArea;
+
+                    ctx.save();
+
+                    // Position in bottom-right corner
+                    const x = chartArea.right - 15;
+                    const y = chartArea.bottom - 20;
+
+                    // Draw "PulseAnalyzer" text
+                    ctx.font = 'bold 14px Inter, sans-serif';
+                    ctx.textAlign = 'right';
+                    ctx.textBaseline = 'bottom';
+
+                    const pulseText = 'Pulse';
+                    const analyzerText = 'Analyzer';
+                    const pulseWidth = ctx.measureText(pulseText).width;
+                    const analyzerWidth = ctx.measureText(analyzerText).width;
+
+                    ctx.globalAlpha = 0.5;
+                    ctx.fillStyle = isDarkMode ? '#aaa' : '#555';
+                    ctx.fillText(pulseText, x - analyzerWidth, y);
+
+                    // "Analyzer" in brand green
+                    ctx.fillStyle = '#00ff9d';
+                    ctx.fillText(analyzerText, x, y);
+
+                    // Draw heart icon
+                    ctx.font = '12px "Font Awesome 6 Free"';
+                    ctx.fillStyle = isDarkMode ? '#aaa' : '#555';
+                    ctx.fillText('♥', x - analyzerWidth - pulseWidth - 8, y);
+
+                    ctx.restore();
+                }
+            };
+
             // @ts-ignore
             fullscreenChartInstance = new window.Chart(fullscreenCanvas, {
                 type: 'line',
                 data: { datasets: chartDatasets },
-                plugins: [fullscreenCrosshairPlugin],
+                plugins: [fullscreenCrosshairPlugin, fullscreenWatermarkPlugin],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
@@ -966,11 +1008,54 @@ const App: React.FC = () => {
             }
         };
 
+        // Watermark plugin for free and 24h pass users only
+        const watermarkPlugin = {
+            id: 'watermark',
+            afterDraw: (chart: any) => {
+                if (userPlan === 'annual') return; // No watermark for annual users
+
+                const ctx = chart.ctx;
+                const chartArea = chart.chartArea;
+
+                ctx.save();
+
+                // Position in bottom-right corner
+                const x = chartArea.right - 10;
+                const y = chartArea.bottom - 15;
+
+                // Draw "PulseAnalyzer" text
+                ctx.font = 'bold 11px Inter, sans-serif';
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'bottom';
+
+                // "Pulse" in dark/light gray
+                const pulseText = 'Pulse';
+                const analyzerText = 'Analyzer';
+                const pulseWidth = ctx.measureText(pulseText).width;
+                const analyzerWidth = ctx.measureText(analyzerText).width;
+
+                ctx.globalAlpha = 0.5;
+                ctx.fillStyle = isDark ? '#aaa' : '#555';
+                ctx.fillText(pulseText, x - analyzerWidth, y);
+
+                // "Analyzer" in brand green
+                ctx.fillStyle = '#00ff9d';
+                ctx.fillText(analyzerText, x, y);
+
+                // Draw heart icon (using Unicode)
+                ctx.font = '10px "Font Awesome 6 Free"';
+                ctx.fillStyle = isDark ? '#aaa' : '#555';
+                ctx.fillText('♥', x - analyzerWidth - pulseWidth - 5, y);
+
+                ctx.restore();
+            }
+        };
+
         // @ts-ignore
         chartInstance.current = new window.Chart(ctx, {
             type: 'line',
             data: { datasets: chartDatasets },
-            plugins: [crosshairPlugin],
+            plugins: [crosshairPlugin, watermarkPlugin],
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
