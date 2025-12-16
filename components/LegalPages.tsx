@@ -55,7 +55,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({ onBack, view }) => {
                         <section className="space-y-3">
                             <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">5. Vos Droits</h2>
                             <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                                Conformément au RGPD, vous pouvez demander l'accès, la modification ou la suppression de vos données en nous contactant à support@pulseanalyzer.com.
+                                Conformément au RGPD, vous pouvez demander l'accès, la modification ou la suppression de vos données en nous contactant à pulse.analyzer.supp@gmail.com.
                             </p>
                         </section>
                     </div>
@@ -100,7 +100,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({ onBack, view }) => {
                             <p className="text-gray-600 dark:text-gray-400 mb-4">
                                 Pour toute demande d'assistance, veuillez nous écrire à :
                             </p>
-                            <a href="mailto:support@pulseanalyzer.com" className="text-brand-500 hover:underline text-lg font-bold">support@pulseanalyzer.com</a>
+                            <a href="mailto:pulse.analyzer.supp@gmail.com" className="text-brand-500 hover:underline text-lg font-bold">pulse.analyzer.supp@gmail.com</a>
                             <p className="text-sm text-gray-500 mt-4">
                                 Nous nous efforçons de répondre sous 24h ouvrées.
                             </p>
