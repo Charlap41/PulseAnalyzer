@@ -1964,7 +1964,11 @@ const App: React.FC = () => {
             }
         }
 
-        if (!newSession.referenceDatasetId && newSession.datasets.length > 0) {
+
+        // Check if reference dataset exists in current datasets (not just if ID is set)
+        const refExists = newSession.referenceDatasetId && newSession.datasets.some(d => d.id === newSession.referenceDatasetId);
+
+        if (!refExists && newSession.datasets.length > 0) {
             const likelyRef = newSession.datasets.find(d => /h10|polar|garmin|chest|ceinture/i.test(d.name));
             if (likelyRef) {
                 newSession.referenceDatasetId = likelyRef.id;
@@ -3046,7 +3050,17 @@ const App: React.FC = () => {
                                                     {userPlan === 'free' ? <i className="fa-solid fa-lock"></i> : <i className="fa-solid fa-file-image"></i>}
                                                     <span>Export JPG</span>
                                                 </button>
-                                                <button onClick={() => { const s = { ...activeSession, datasets: [], analysisResults: [], analysisText: '' }; saveSession(s); }} className="px-3 py-2 text-xs font-bold bg-gray-500/10 text-gray-500 rounded hover:bg-yellow-500/10 hover:text-yellow-500 transition">
+                                                <button onClick={() => {
+                                                    const s = {
+                                                        ...activeSession,
+                                                        datasets: [],
+                                                        analysisResults: [],
+                                                        analysisText: '',
+                                                        referenceDatasetId: null,
+                                                        lastAnalysisSignature: ''
+                                                    };
+                                                    saveSession(s);
+                                                }} className="px-3 py-2 text-xs font-bold bg-gray-500/10 text-gray-500 rounded hover:bg-yellow-500/10 hover:text-yellow-500 transition">
                                                     <i className="fa-solid fa-eraser"></i>
                                                 </button>
                                             </div>
