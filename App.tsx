@@ -3044,8 +3044,7 @@ const App: React.FC = () => {
                                                     ? 'bg-gray-500/10 text-gray-500 border border-gray-500/20 hover:bg-gray-500/20'
                                                     : 'bg-gradient-to-r from-brand-500 to-blue-500 text-black hover:from-brand-400 hover:to-blue-400 shadow-brand-500/30 animate-pulse hover:animate-none'}`}>
                                                     {userPlan === 'free' ? <i className="fa-solid fa-lock"></i> : <i className="fa-solid fa-file-image"></i>}
-                                                    <span className="hidden sm:inline">{text.session.report}</span>
-                                                    {userPlan !== 'free' && <span className="hidden md:inline text-[8px] opacity-80">JPG</span>}
+                                                    <span>Export JPG</span>
                                                 </button>
                                                 <button onClick={() => { const s = { ...activeSession, datasets: [], analysisResults: [], analysisText: '' }; saveSession(s); }} className="px-3 py-2 text-xs font-bold bg-gray-500/10 text-gray-500 rounded hover:bg-yellow-500/10 hover:text-yellow-500 transition">
                                                     <i className="fa-solid fa-eraser"></i>
@@ -3398,6 +3397,14 @@ const App: React.FC = () => {
                                                                                     <button onClick={() => {
                                                                                         const s = { ...activeSession };
                                                                                         s.datasets = s.datasets.filter(x => x.id !== ds.id);
+                                                                                        // Reset reference if we deleted the reference dataset
+                                                                                        if (s.referenceDatasetId === ds.id) {
+                                                                                            s.referenceDatasetId = s.datasets.length > 0 ? s.datasets[0].id : null;
+                                                                                        }
+                                                                                        // Clear analysis so it can re-run with new data
+                                                                                        s.analysisResults = [];
+                                                                                        s.analysisText = '';
+                                                                                        s.lastAnalysisSignature = '';
                                                                                         // Reset processing state in case it was stuck
                                                                                         setIsProcessing(false);
                                                                                         saveSession(s);
