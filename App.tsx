@@ -641,25 +641,172 @@ const App: React.FC = () => {
 
             const isDarkMode = document.documentElement.classList.contains('dark');
 
+            // Linear interpolation helper for fullscreen chart - returns null if in a gap
+            const interpolateY = (data: { x: number, y: number | null }[], targetX: number): number | null => {
+                if (!data || data.length === 0) return null;
+
+                let lowerIdx = -1;
+                let upperIdx = -1;
+
+                for (let i = 0; i < data.length; i++) {
+                    if (data[i].x <= targetX && data[i].y !== null) lowerIdx = i;
+                    if (data[i].x >= targetX && data[i].y !== null && upperIdx === -1) {
+                        upperIdx = i;
+                        break;
+                    }
+                }
+
+                if (lowerIdx === -1 && upperIdx === -1) return null;
+                if (lowerIdx === -1) return data[upperIdx].y;
+                if (upperIdx === -1) return data[lowerIdx].y;
+                if (lowerIdx === upperIdx) return data[lowerIdx].y;
+
+                // Check if there's a null (gap) between lower and upper
+                for (let i = lowerIdx + 1; i < upperIdx; i++) {
+                    if (data[i].y === null) return null;
+                }
+
+                const x0 = data[lowerIdx].x;
+                const y0 = data[lowerIdx].y!;
+                const x1 = data[upperIdx].x;
+                const y1 = data[upperIdx].y!;
+
+                if (x1 === x0) return y0;
+                const t = (targetX - x0) / (x1 - x0);
+                return y0 + t * (y1 - y0);
+            };
+
+            // Custom crosshair plugin for fullscreen chart
+            const fullscreenCrosshairPlugin = {
+                id: 'fullscreenCrosshair',
+                afterDraw: (chart: any) => {
+                    const tooltip = chart.tooltip;
+                    if (!tooltip || !tooltip.caretX) return;
+
+                    const ctx = chart.ctx;
+                    const xScale = chart.scales.x;
+                    const yScale = chart.scales.y;
+                    const dataX = xScale.getValueForPixel(tooltip.caretX);
+
+                    if (dataX === undefined) return;
+
+                    // Draw vertical crosshair line
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(tooltip.caretX, chart.chartArea.top);
+                    ctx.lineTo(tooltip.caretX, chart.chartArea.bottom);
+                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = isDarkMode ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)';
+                    ctx.stroke();
+                    ctx.restore();
+
+                    // Draw interpolated circles for each dataset
+                    chart.data.datasets.forEach((dataset: any) => {
+                        const yVal = interpolateY(dataset.data, dataX);
+                        if (yVal === null) return;
+
+                        const pixelY = yScale.getPixelForValue(yVal);
+
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.arc(tooltip.caretX, pixelY, 6, 0, 2 * Math.PI);
+                        ctx.fillStyle = dataset.borderColor;
+                        ctx.fill();
+                        ctx.strokeStyle = isDarkMode ? '#fff' : '#000';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        ctx.restore();
+                    });
+                }
+            };
+
             // @ts-ignore
             fullscreenChartInstance = new window.Chart(fullscreenCanvas, {
                 type: 'line',
                 data: { datasets: chartDatasets },
+                plugins: [fullscreenCrosshairPlugin],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: { duration: 300 },
+                    interaction: { mode: 'index', axis: 'x', intersect: false },
+                    hover: { mode: null },
                     plugins: {
                         legend: { display: true, position: 'top', labels: { color: isDarkMode ? '#fff' : '#333', font: { size: 14 } } },
                         zoom: {
                             pan: { enabled: true, mode: 'x' },
                             zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
+                        },
+                        tooltip: {
+                            enabled: false,
+                            external: (context: any) => {
+                                const { chart, tooltip } = context;
+                                const xScale = chart.scales.x;
+                                const dataX = tooltip.caretX ? xScale.getValueForPixel(tooltip.caretX) : undefined;
+
+                                let tooltipEl = document.getElementById('fullscreen-tooltip-custom');
+                                if (!tooltipEl) {
+                                    tooltipEl = document.createElement('div');
+                                    tooltipEl.id = 'fullscreen-tooltip-custom';
+                                    tooltipEl.style.cssText = `
+                                        position: absolute;
+                                        background: ${isDarkMode ? 'rgba(15,15,15,0.95)' : 'rgba(255,255,255,0.95)'};
+                                        border: 1px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'};
+                                        border-radius: 8px;
+                                        padding: 10px 14px;
+                                        pointer-events: none;
+                                        font-family: Inter, sans-serif;
+                                        font-size: 13px;
+                                        z-index: 10000;
+                                        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+                                    `;
+                                    document.body.appendChild(tooltipEl);
+                                }
+
+                                tooltipEl.style.background = isDarkMode ? 'rgba(15,15,15,0.95)' : 'rgba(255,255,255,0.95)';
+                                tooltipEl.style.borderColor = isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+                                tooltipEl.style.color = isDarkMode ? '#fff' : '#333';
+
+                                if (tooltip.opacity === 0 || dataX === undefined) {
+                                    tooltipEl.style.opacity = '0';
+                                    return;
+                                }
+
+                                const m = Math.floor(dataX / 60);
+                                const s = Math.floor(dataX % 60);
+                                let html = `<div style="font-weight: bold; margin-bottom: 6px; color: ${isDarkMode ? '#fff' : '#000'}; font-size: 14px;">${m}m ${s < 10 ? '0' + s : s}s</div>`;
+
+                                chart.data.datasets.forEach((dataset: any) => {
+                                    const yVal = interpolateY(dataset.data, dataX);
+                                    if (yVal !== null) {
+                                        html += `<div style="display: flex; align-items: center; gap: 8px; color: ${isDarkMode ? '#ccc' : '#333'}; margin: 3px 0;">
+                                            <span style="width: 12px; height: 12px; background: ${dataset.borderColor}; border-radius: 3px;"></span>
+                                            <span style="font-weight: 500;">${dataset.label}:</span> <strong>${yVal.toFixed(0)} bpm</strong>
+                                        </div>`;
+                                    }
+                                });
+
+                                tooltipEl.innerHTML = html;
+                                tooltipEl.style.opacity = '1';
+
+                                const canvasRect = chart.canvas.getBoundingClientRect();
+                                const tooltipWidth = tooltipEl.offsetWidth || 180;
+                                const viewportWidth = window.innerWidth;
+                                const tooltipX = canvasRect.left + tooltip.caretX + 15;
+
+                                if (tooltipX + tooltipWidth > viewportWidth - 20) {
+                                    tooltipEl.style.left = (canvasRect.left + window.scrollX + tooltip.caretX - tooltipWidth - 15) + 'px';
+                                } else {
+                                    tooltipEl.style.left = (canvasRect.left + window.scrollX + tooltip.caretX + 15) + 'px';
+                                }
+                                tooltipEl.style.top = (canvasRect.top + window.scrollY + tooltip.caretY - 40) + 'px';
+                            }
                         }
                     },
                     scales: {
                         x: {
                             type: 'linear',
-                            max: maxX, // Limit to actual data range - no white space at end
+                            max: maxX,
                             title: { display: true, text: 'Temps (min)', color: isDarkMode ? '#aaa' : '#555' },
                             ticks: {
                                 color: isDarkMode ? '#aaa' : '#555',
@@ -686,6 +833,9 @@ const App: React.FC = () => {
             if (fullscreenChartInstance) {
                 fullscreenChartInstance.destroy();
             }
+            // Cleanup tooltip element
+            const tooltipEl = document.getElementById('fullscreen-tooltip-custom');
+            if (tooltipEl) tooltipEl.remove();
         };
     }, [isChartFullscreen, activeSession, isDark, smoothing, chartFillEnabled, connectGaps]);
 
