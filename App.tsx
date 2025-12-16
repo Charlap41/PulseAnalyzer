@@ -770,9 +770,9 @@ const App: React.FC = () => {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    animation: { duration: 300 },
+                    animation: false, // Disable animation to prevent tooltip/crosshair jitter
                     interaction: { mode: 'index', axis: 'x', intersect: false },
-                    hover: { mode: null },
+                    hover: { mode: null, animationDuration: 0 },
                     plugins: {
                         legend: { display: true, position: 'top', labels: { color: isDarkMode ? '#fff' : '#333', font: { size: 14 } } },
                         zoom: {
