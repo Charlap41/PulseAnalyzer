@@ -1857,11 +1857,17 @@ const App: React.FC = () => {
         // NOTE: We allow Basic Stats (Dropouts) for everyone. AI is gated below.
 
 
-        if (!sessionToAnalyze) return;
+        if (!sessionToAnalyze) {
+            setIsProcessing(false);
+            return;
+        }
 
         let refDs = sessionToAnalyze.datasets.find(d => d.id === sessionToAnalyze.referenceDatasetId);
 
-        if (!refDs) return;
+        if (!refDs) {
+            setIsProcessing(false);
+            return;
+        }
 
         setStatus(text.nav.statusProcessing);
         setIsProcessing(true);
@@ -1975,7 +1981,9 @@ const App: React.FC = () => {
             if (newSession.referenceDatasetId && newSession.datasets.length > 0) {
                 await runSessionAnalysis(newSession);
             } else {
+                // No reference or no datasets - reset processing state
                 setIsProcessing(false);
+                setStatus(text.nav.statusReady);
             }
         }, 500);
 
