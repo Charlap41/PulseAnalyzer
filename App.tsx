@@ -2162,6 +2162,9 @@ const App: React.FC = () => {
         setStatus(text.nav.statusProcessing);
         setIsProcessing(true);
 
+        // Parse all files first to identify potential references
+        const parsedFiles: { name: string; data: any[]; startTime: number; isReference: boolean }[] = [];
+
         for (let i = 0; i < e.target.files.length; i++) {
             const file = e.target.files[i];
             const ext = file.name.split('.').pop()?.toLowerCase() || '';
@@ -2172,40 +2175,61 @@ const App: React.FC = () => {
                 const text = new TextDecoder().decode(buffer);
                 result = await parseTextFile(text, file.name, ext);
             }
-            if (result) {
-                const color = COLORS[newSession.datasets.length % COLORS.length];
+            if (result && result.points.length > 0) {
                 const cleanName = extractDeviceNameFromFilename(result.name);
-
-                let finalName = cleanName;
-                let counter = 2;
-                while (newSession.datasets.some(d => d.name === finalName)) {
-                    finalName = `${cleanName} ${counter}`;
-                    counter++;
-                }
-
-                if (result.points.length > 0) {
-                    const firstPointTs = result.points[0].ts;
-                    if (firstPointTs > 0) {
-                        newSession.date = firstPointTs;
-                    }
-                }
-
-                newSession.datasets.push({
-                    id: Date.now() + Math.random().toString(),
-                    name: finalName,
+                // Check if this file is a potential reference device (chest strap)
+                const isReference = /h10|polar|garmin|chest|ceinture/i.test(cleanName);
+                parsedFiles.push({
+                    name: cleanName,
                     data: result.points,
-                    color: color,
-                    offset: 0,
-                    visible: true,
-                    startTime: result.points[0].ts
+                    startTime: result.points[0].ts,
+                    isReference
                 });
-
-                // LIMIT CHECK FOR FREE PLAN
-                if (userPlan === 'free' && newSession.datasets.length >= 3) {
-                    alert("Limite atteinte : Le plan Gratuit est limité à 3 fichiers/dispositifs par session.");
-                    break; // Stop processing further files
-                }
             }
+        }
+
+        // Sort files: reference devices first, then others
+        parsedFiles.sort((a, b) => {
+            if (a.isReference && !b.isReference) return -1;
+            if (!a.isReference && b.isReference) return 1;
+            return 0;
+        });
+
+        // Apply file limit for free plan (3 files max), but now reference devices are prioritized
+        const maxFiles = userPlan === 'free' ? 3 : Infinity;
+        const filesToAdd = parsedFiles.slice(0, maxFiles);
+
+        if (parsedFiles.length > maxFiles) {
+            alert(lang === 'fr'
+                ? `Limite atteinte : Le plan Gratuit est limité à ${maxFiles} fichiers/dispositifs par session. Les fichiers de référence (ceinture pectorale) sont priorisés.`
+                : `Limit reached: Free plan is limited to ${maxFiles} files/devices per session. Reference devices (chest straps) are prioritized.`
+            );
+        }
+
+        // Add the prioritized files to the session
+        for (const parsedFile of filesToAdd) {
+            const color = COLORS[newSession.datasets.length % COLORS.length];
+
+            let finalName = parsedFile.name;
+            let counter = 2;
+            while (newSession.datasets.some(d => d.name === finalName)) {
+                finalName = `${parsedFile.name} ${counter}`;
+                counter++;
+            }
+
+            if (parsedFile.startTime > 0 && newSession.datasets.length === 0) {
+                newSession.date = parsedFile.startTime;
+            }
+
+            newSession.datasets.push({
+                id: Date.now() + Math.random().toString(),
+                name: finalName,
+                data: parsedFile.data,
+                color: color,
+                offset: 0,
+                visible: true,
+                startTime: parsedFile.startTime
+            });
         }
 
 
