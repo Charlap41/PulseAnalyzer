@@ -1231,8 +1231,11 @@ const App: React.FC = () => {
     const zoomIn = () => chartInstance.current?.zoom(1.1);
     const zoomOut = () => chartInstance.current?.zoom(0.9);
     const resetZoom = () => chartInstance.current?.resetZoom();
-    const panLeft = () => chartInstance.current?.pan({ x: -100 });
-    const panRight = () => chartInstance.current?.pan({ x: 100 });
+    // Pan: positive value moves chart content in that direction, so to "go left" (see earlier content), we pan content right (positive x)
+    const panLeft = () => chartInstance.current?.pan({ x: 100 });  // See content on the left
+    const panRight = () => chartInstance.current?.pan({ x: -100 }); // See content on the right
+    const panUp = () => chartInstance.current?.pan({ y: 100 });    // See content above
+    const panDown = () => chartInstance.current?.pan({ y: -100 }); // See content below
 
     // 5. Dashboard View Logic (Auto-Analysis with Smart Caching)
     useEffect(() => {
@@ -3452,10 +3455,16 @@ const App: React.FC = () => {
                                                                 <i className="fa-solid fa-expand"></i>
                                                             </button>
                                                         </div>
-                                                        <div className="flex flex-col gap-1">
-                                                            <button onClick={panLeft} className="w-7 h-7 flex items-center justify-center rounded bg-gray-100/80 dark:bg-black/50 text-gray-700 dark:text-gray-200 hover:bg-white text-xs shadow"><i className="fa-solid fa-chevron-left"></i></button>
-                                                            <button onClick={panRight} className="w-7 h-7 flex items-center justify-center rounded bg-gray-100/80 dark:bg-black/50 text-gray-700 dark:text-gray-200 hover:bg-white text-xs shadow"><i className="fa-solid fa-chevron-right"></i></button>
+                                                        {/* D-Pad Navigation */}
+                                                        <div className="flex flex-col items-center gap-0.5">
+                                                            <button onClick={panUp} className="w-6 h-6 flex items-center justify-center rounded bg-gray-100/80 dark:bg-black/50 text-gray-700 dark:text-gray-200 hover:bg-white text-[10px] shadow" title={lang === 'fr' ? 'Haut' : 'Up'}><i className="fa-solid fa-chevron-up"></i></button>
+                                                            <div className="flex gap-0.5">
+                                                                <button onClick={panLeft} className="w-6 h-6 flex items-center justify-center rounded bg-gray-100/80 dark:bg-black/50 text-gray-700 dark:text-gray-200 hover:bg-white text-[10px] shadow" title={lang === 'fr' ? 'Gauche' : 'Left'}><i className="fa-solid fa-chevron-left"></i></button>
+                                                                <button onClick={panRight} className="w-6 h-6 flex items-center justify-center rounded bg-gray-100/80 dark:bg-black/50 text-gray-700 dark:text-gray-200 hover:bg-white text-[10px] shadow" title={lang === 'fr' ? 'Droite' : 'Right'}><i className="fa-solid fa-chevron-right"></i></button>
+                                                            </div>
+                                                            <button onClick={panDown} className="w-6 h-6 flex items-center justify-center rounded bg-gray-100/80 dark:bg-black/50 text-gray-700 dark:text-gray-200 hover:bg-white text-[10px] shadow" title={lang === 'fr' ? 'Bas' : 'Down'}><i className="fa-solid fa-chevron-down"></i></button>
                                                         </div>
+                                                        {/* Zoom Controls */}
                                                         <div className="flex flex-col gap-1">
                                                             <button onClick={zoomIn} className="w-7 h-7 flex items-center justify-center rounded bg-gray-100/80 dark:bg-black/50 text-gray-700 dark:text-gray-200 hover:bg-white text-xs shadow"><i className="fa-solid fa-plus"></i></button>
                                                             <button onClick={zoomOut} className="w-7 h-7 flex items-center justify-center rounded bg-gray-100/80 dark:bg-black/50 text-gray-700 dark:text-gray-200 hover:bg-white text-xs shadow"><i className="fa-solid fa-minus"></i></button>
