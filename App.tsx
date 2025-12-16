@@ -3622,19 +3622,31 @@ const App: React.FC = () => {
 
                                                                             {/* SCORE COLUMN */}
                                                                             <td className="px-4 py-3 text-center">
-                                                                                {activeSession.referenceDatasetId !== ds.id && activeSession.analysisResults?.find(r => r.device === ds.name)?.score ? (
-                                                                                    <span
-                                                                                        className={`text-xs px-2 py-0.5 rounded-full font-bold cursor-help ${(activeSession.analysisResults.find(r => r.device === ds.name)?.score || 0) >= 80 ? 'text-green-500 bg-green-100 dark:bg-green-500/20' :
-                                                                                            (activeSession.analysisResults.find(r => r.device === ds.name)?.score || 0) >= 50 ? 'text-yellow-500 bg-yellow-100 dark:bg-yellow-500/20' :
-                                                                                                'text-red-500 bg-red-100 dark:bg-red-500/20'
-                                                                                            }`}
-                                                                                        title="Score Global = (Corrélation 50% + Précision 30% + Stabilité 20%) x Intégrité du Signal"
-                                                                                    >
-                                                                                        {activeSession.analysisResults.find(r => r.device === ds.name)?.score}/100
-                                                                                    </span>
-                                                                                ) : (
-                                                                                    <span className="text-gray-300 text-xs">-</span>
-                                                                                )}
+                                                                                {(() => {
+                                                                                    const analysisForDevice = activeSession.analysisResults?.find(r => r.device === ds.name);
+                                                                                    const isReference = activeSession.referenceDatasetId === ds.id;
+                                                                                    const hasScore = analysisForDevice && analysisForDevice.score !== undefined;
+
+                                                                                    if (isReference || !hasScore) {
+                                                                                        return <span className="text-gray-300 text-xs">-</span>;
+                                                                                    }
+
+                                                                                    const score = analysisForDevice.score;
+                                                                                    const colorClass = score >= 80
+                                                                                        ? 'text-green-500 bg-green-100 dark:bg-green-500/20'
+                                                                                        : score >= 50
+                                                                                            ? 'text-yellow-500 bg-yellow-100 dark:bg-yellow-500/20'
+                                                                                            : 'text-red-500 bg-red-100 dark:bg-red-500/20';
+
+                                                                                    return (
+                                                                                        <span
+                                                                                            className={`text-xs px-2 py-0.5 rounded-full font-bold cursor-help ${colorClass}`}
+                                                                                            title="Score Global = (Corrélation 50% + Précision 30% + Stabilité 20%) x Intégrité du Signal"
+                                                                                        >
+                                                                                            {score}/100
+                                                                                        </span>
+                                                                                    );
+                                                                                })()}
                                                                             </td>
 
                                                                             {/* SIGNAL QUALITY / DROPOUTS */}
