@@ -3032,9 +3032,12 @@ const App: React.FC = () => {
                                                     <i className="fa-solid fa-plus"></i> <span className="hidden sm:inline">{text.session.addFiles}</span>
                                                     <input ref={fileInputRef} type="file" multiple accept=".fit,.gpx,.tcx,.csv" className="hidden" onChange={handleFileUpload} />
                                                 </label>
-                                                <button onClick={exportChartsToJPG} className="px-3 py-2 text-xs font-bold bg-blue-600/10 text-blue-600 dark:bg-blue-600/20 dark:text-blue-300 border border-blue-500/20 dark:border-blue-500/30 rounded hover:bg-blue-500/20 transition flex items-center gap-2">
+                                                <button onClick={exportChartsToJPG} className={`px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2 shadow-lg ${userPlan === 'free'
+                                                    ? 'bg-gray-500/10 text-gray-500 border border-gray-500/20 hover:bg-gray-500/20'
+                                                    : 'bg-gradient-to-r from-brand-500 to-blue-500 text-black hover:from-brand-400 hover:to-blue-400 shadow-brand-500/30 animate-pulse hover:animate-none'}`}>
                                                     {userPlan === 'free' ? <i className="fa-solid fa-lock"></i> : <i className="fa-solid fa-file-image"></i>}
                                                     <span className="hidden sm:inline">{text.session.report}</span>
+                                                    {userPlan !== 'free' && <span className="hidden md:inline text-[8px] opacity-80">JPG</span>}
                                                 </button>
                                                 <button onClick={() => { const s = { ...activeSession, datasets: [], analysisResults: [], analysisText: '' }; saveSession(s); }} className="px-3 py-2 text-xs font-bold bg-gray-500/10 text-gray-500 rounded hover:bg-yellow-500/10 hover:text-yellow-500 transition">
                                                     <i className="fa-solid fa-eraser"></i>
@@ -3387,6 +3390,8 @@ const App: React.FC = () => {
                                                                                     <button onClick={() => {
                                                                                         const s = { ...activeSession };
                                                                                         s.datasets = s.datasets.filter(x => x.id !== ds.id);
+                                                                                        // Reset processing state in case it was stuck
+                                                                                        setIsProcessing(false);
                                                                                         saveSession(s);
                                                                                     }} className="w-6 h-6 flex items-center justify-center rounded hover:bg-red-500/10 text-gray-400 hover:text-red-500">
                                                                                         <i className="fa-solid fa-trash-can text-xs"></i>
