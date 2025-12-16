@@ -369,6 +369,55 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onEnterDem
                     </div>
                 </div >
 
+                {/* --- How It Works Section --- */}
+                <div className="mt-32 w-full max-w-5xl mx-auto px-4">
+                    <div className="text-center mb-12">
+                        <h2 className="text-3xl md:text-4xl font-bold mb-4">{text.howItWorks}</h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        {/* Step 1 */}
+                        <div className="scroll-animate fade-up stagger-1 bg-gradient-to-b from-white/5 to-transparent p-6 rounded-2xl border border-white/10 text-center relative group hover:border-brand-500/30 transition-colors">
+                            <div className="w-14 h-14 rounded-full bg-brand-500/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-500/20 transition-colors">
+                                <i className="fa-solid fa-download text-2xl text-brand-500"></i>
+                            </div>
+                            <h3 className="text-lg font-bold text-white mb-2">{text.howStep1Title}</h3>
+                            <p className="text-sm text-gray-400 mb-3">{text.howStep1Desc}</p>
+                            <div className="bg-brand-500/10 text-brand-400 text-xs px-3 py-1.5 rounded-full inline-flex items-center gap-1.5">
+                                <i className="fa-solid fa-lightbulb"></i>
+                                {text.howStep1Tip}
+                            </div>
+                        </div>
+
+                        {/* Step 2 */}
+                        <div className="scroll-animate fade-up stagger-2 bg-gradient-to-b from-white/5 to-transparent p-6 rounded-2xl border border-white/10 text-center relative group hover:border-blue-500/30 transition-colors">
+                            <div className="w-14 h-14 rounded-full bg-blue-500/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-500/20 transition-colors">
+                                <i className="fa-solid fa-file-import text-2xl text-blue-400"></i>
+                            </div>
+                            <h3 className="text-lg font-bold text-white mb-2">{text.howStep2Title}</h3>
+                            <p className="text-sm text-gray-400">{text.howStep2Desc}</p>
+                        </div>
+
+                        {/* Step 3 */}
+                        <div className="scroll-animate fade-up stagger-3 bg-gradient-to-b from-white/5 to-transparent p-6 rounded-2xl border border-white/10 text-center relative group hover:border-yellow-500/30 transition-colors">
+                            <div className="w-14 h-14 rounded-full bg-yellow-500/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-yellow-500/20 transition-colors">
+                                <i className="fa-solid fa-star text-2xl text-yellow-400"></i>
+                            </div>
+                            <h3 className="text-lg font-bold text-white mb-2">{text.howStep3Title}</h3>
+                            <p className="text-sm text-gray-400">{text.howStep3Desc}</p>
+                        </div>
+
+                        {/* Step 4 */}
+                        <div className="scroll-animate fade-up stagger-4 bg-gradient-to-b from-white/5 to-transparent p-6 rounded-2xl border border-white/10 text-center relative group hover:border-purple-500/30 transition-colors">
+                            <div className="w-14 h-14 rounded-full bg-purple-500/10 flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-500/20 transition-colors">
+                                <i className="fa-solid fa-chart-pie text-2xl text-purple-400"></i>
+                            </div>
+                            <h3 className="text-lg font-bold text-white mb-2">{text.howStep4Title}</h3>
+                            <p className="text-sm text-gray-400">{text.howStep4Desc}</p>
+                        </div>
+                    </div>
+                </div>
+
                 {/* --- Pricing Section --- */}
                 < div className="mt-32 w-full max-w-5xl mx-auto px-4 animate-fade-in" style={{ animationDelay: '0.6s' }}>
                     <div className="text-center mb-16">
@@ -391,7 +440,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onEnterDem
                                     <li className="flex items-center gap-3"><i className="fa-solid fa-check text-gray-500 w-5"></i> {pricing.features.sessions1}</li>
                                     <li className="flex items-center gap-3"><i className="fa-solid fa-check text-gray-500 w-5"></i> {pricing.features.filesLimited}</li>
                                     <li className="flex items-center gap-3"><i className="fa-solid fa-check text-gray-500 w-5"></i> {pricing.features.visualization}</li>
-                                    <li className="flex items-center gap-3 text-gray-600"><i className="fa-solid fa-xmark w-5 text-center"></i> {pricing.features.basicStats}</li>
+                                    <li className="flex items-center gap-3"><i className="fa-solid fa-check text-brand-500 w-5"></i> <span className="text-gray-300">{pricing.features.scoreCalc}</span></li>
+                                    <li className="flex items-center gap-3"><i className="fa-solid fa-check text-brand-500 w-5"></i> <span className="text-gray-300">{pricing.features.dropoutDetection}</span></li>
                                     <li className="flex items-center gap-3 text-gray-600"><i className="fa-solid fa-xmark w-5 text-center"></i> {pricing.features.aiAnalysis}</li>
                                     <li className="flex items-center gap-3 text-gray-600"><i className="fa-solid fa-xmark w-5 text-center"></i> {pricing.features.export}</li>
                                 </ul>
