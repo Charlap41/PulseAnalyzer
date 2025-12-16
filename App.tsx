@@ -2895,6 +2895,8 @@ const App: React.FC = () => {
                                             };
                                             await saveSession(newSession as Session);
                                             if (!activeSessionForm.id) {
+                                                // Track session creation for limit enforcement
+                                                setCreationHistory(prev => [...prev, Date.now()]);
                                                 setActiveSessionId(newSession.id);
                                                 setActiveTab('session');
                                                 setTimeout(() => {
