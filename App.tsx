@@ -788,12 +788,14 @@ const App: React.FC = () => {
 
                                 // Find or create tooltip inside the chart container (so it rotates with the chart)
                                 const chartContainer = chart.canvas.parentElement;
-                                let tooltipEl = document.getElementById('fullscreen-tooltip-custom');
+                                let tooltipEl = document.getElementById('fullscreen-tooltip-custom') as HTMLElement | null;
                                 if (!tooltipEl) {
                                     tooltipEl = document.createElement('div');
                                     tooltipEl.id = 'fullscreen-tooltip-custom';
                                     tooltipEl.style.cssText = `
                                         position: absolute;
+                                        left: 0;
+                                        top: 0;
                                         background: ${isDarkMode ? 'rgba(15,15,15,0.95)' : 'rgba(255,255,255,0.95)'};
                                         border: 1px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'};
                                         border-radius: 8px;
@@ -803,6 +805,9 @@ const App: React.FC = () => {
                                         font-size: 13px;
                                         z-index: 10000;
                                         box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+                                        opacity: 0;
+                                        transition: opacity 0.1s ease-out;
+                                        will-change: transform, opacity;
                                     `;
                                     // Append to chart container instead of body
                                     if (chartContainer) {
@@ -839,18 +844,18 @@ const App: React.FC = () => {
                                 tooltipEl.innerHTML = html;
                                 tooltipEl.style.opacity = '1';
 
-                                // Position relative to the canvas within the container
-                                const tooltipWidth = tooltipEl.offsetWidth || 180;
+                                // Use transform for GPU-accelerated positioning (smoother)
+                                const tooltipWidth = 180; // Fixed width estimate to avoid reflow
                                 const canvasWidth = chart.canvas.offsetWidth;
-                                const tooltipX = tooltip.caretX + 15;
+                                let tooltipX = tooltip.caretX + 15;
+                                const tooltipY = Math.max(10, tooltip.caretY - 40);
 
                                 // Flip to left side if would overflow
                                 if (tooltipX + tooltipWidth > canvasWidth - 20) {
-                                    tooltipEl.style.left = (tooltip.caretX - tooltipWidth - 15) + 'px';
-                                } else {
-                                    tooltipEl.style.left = tooltipX + 'px';
+                                    tooltipX = tooltip.caretX - tooltipWidth - 15;
                                 }
-                                tooltipEl.style.top = Math.max(10, tooltip.caretY - 40) + 'px';
+
+                                tooltipEl.style.transform = `translate(${tooltipX}px, ${tooltipY}px)`;
                             }
                         }
                     },
