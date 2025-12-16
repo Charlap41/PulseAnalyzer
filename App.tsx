@@ -2966,6 +2966,7 @@ const App: React.FC = () => {
                     setLang={setLang}
                     userPlan={userPlan}
                     isLoggedIn={!!currentUser}
+                    userEmail={currentUser?.email || null}
                     onUpgrade={() => setPlanOverviewModalOpen(true)}
                     onNavigate={(view) => setView(view)}
                 />

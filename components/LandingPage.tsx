@@ -14,6 +14,7 @@ interface LandingPageProps {
     setLang: (l: Language) => void;
     userPlan: string;
     isLoggedIn: boolean;
+    userEmail?: string | null;
     onUpgrade: () => void;
     onNavigate: (view: any) => void;
 }
@@ -93,7 +94,7 @@ const MockReport = () => (
     </div>
 );
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onEnterDemo, onLogin, onOpenHelp, onBuyDayPass, onBuyAnnualPass, lang, setLang, userPlan, isLoggedIn, onUpgrade, onNavigate }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onEnterDemo, onLogin, onOpenHelp, onBuyDayPass, onBuyAnnualPass, lang, setLang, userPlan, isLoggedIn, userEmail, onUpgrade, onNavigate }) => {
     const text = t(lang).landing;
     const pricing = t(lang).pricing;
     const exportInfo = t(lang).export.infoModal;
@@ -132,13 +133,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onEnterDem
                     >
                         {lang === 'fr' ? 'EN' : 'FR'}
                     </button>
-                    {!isLoggedIn && (
+                    {!isLoggedIn ? (
                         <button
                             onClick={onLogin}
                             className="text-sm font-medium text-gray-300 hover:text-white transition"
                         >
                             {text.login}
                         </button>
+                    ) : (
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/30 animate-fade-in">
+                            <i className="fa-solid fa-circle-check text-brand-500 text-sm"></i>
+                            <span className="text-xs text-brand-400 font-medium max-w-[150px] truncate" title={userEmail || ''}>
+                                {userEmail || (lang === 'fr' ? 'Connecté' : 'Logged in')}
+                            </span>
+                        </div>
                     )}
                     <button
                         onClick={onEnterApp}
