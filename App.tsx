@@ -1484,7 +1484,7 @@ TEXT TO TRANSLATE:
 ${text}`;
 
         try {
-            const translated = await fetchSimpleAI(prompt, 'gemini-2.0-flash');
+            const translated = await fetchSimpleAI(prompt, 'gemini-2.5-flash');
 
             // Check if API returned an error string (quota exceeded, etc.)
             if (translated.startsWith('Error:') || translated.includes('429') || translated.includes('quota')) {
