@@ -9,7 +9,7 @@ import { HelpPage } from './components/HelpPage';
 import { LegalPage } from './components/LegalPages';
 import { AccountModal } from './components/AccountModal';
 import { Session, Dataset, AnalysisResult, Language, ViewState, SubscriptionPlan } from './types';
-import { parseFitFile, parseTextFile, calculateTrustScore, fetchAIAnalysis, formatAIResponse, fetchGlobalAIAnalysis, extractDeviceNameFromFilename, calculateSessionStats, calculateMean } from './utils';
+import { parseFitFile, parseTextFile, calculateTrustScore, fetchAIAnalysis, formatAIResponse, fetchGlobalAIAnalysis, extractDeviceNameFromFilename, calculateSessionStats, calculateMean, fetchSimpleAI } from './utils';
 import { createCheckoutSession, createPortalSession, STRIPE_PRICES } from './utils/stripe';
 import { t } from './translations';
 import { DEMO_SESSION, DEMO_AI_TEXT } from './demoData';
@@ -165,6 +165,8 @@ const App: React.FC = () => {
     const [sessionToDeleteId, setSessionToDeleteId] = useState<string | null>(null);
     const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
     const [exportImages, setExportImages] = useState<{ main: string, stats: string }>({ main: '', stats: '' });
+    const [exportLang, setExportLang] = useState<'fr' | 'en'>('fr'); // Default to French
+    const [showExportLangModal, setShowExportLangModal] = useState(false);
 
     // --- Session List UI State ---
     const [showSessionList, setShowSessionList] = useState(true);
@@ -1467,7 +1469,30 @@ const App: React.FC = () => {
         setIsProcessing(false);
     };
 
-    const exportChartsToJPG = async () => {
+    // Translate AI analysis text for export (FR <-> EN)
+    const translateAIText = async (text: string, targetLang: 'fr' | 'en'): Promise<string> => {
+        if (!text) return '';
+
+        const sourceLang = targetLang === 'en' ? 'French' : 'English';
+        const destLang = targetLang === 'en' ? 'English' : 'French';
+
+        const prompt = `Translate the following heart rate analysis report from ${sourceLang} to ${destLang}. 
+Keep all markdown formatting, numbers, device names, and technical terms intact. 
+Only translate the descriptive text. Do not add any commentary.
+
+TEXT TO TRANSLATE:
+${text}`;
+
+        try {
+            const translated = await fetchSimpleAI(prompt, 'gemini-2.0-flash');
+            return translated;
+        } catch (e) {
+            console.error('Translation failed:', e);
+            return text; // Return original if translation fails
+        }
+    };
+
+    const exportChartsToJPG = async (targetLang?: 'fr' | 'en') => {
         // LOCK EXPORT for Free Users (Allowed for 24h and Annual)
         if (userPlan === 'free') {
             setUpgradeModalOpen(true);
@@ -1654,9 +1679,16 @@ const App: React.FC = () => {
             }
 
             if (activeSession.analysisText && userPlan !== '24h') {
+                // Translate AI text if exporting in different language
+                let aiTextToExport = activeSession.analysisText;
+                if (targetLang && targetLang !== lang) {
+                    setStatus(lang === 'fr' ? 'Traduction en cours...' : 'Translating...');
+                    aiTextToExport = await translateAIText(activeSession.analysisText, targetLang);
+                }
+
                 const aiDiv = document.createElement('div');
                 aiDiv.className = "mt-4 p-6 bg-gray-50 rounded-lg border-l-4 border-brand-500";
-                aiDiv.innerHTML = formatAIResponse(activeSession.analysisText, true);
+                aiDiv.innerHTML = formatAIResponse(aiTextToExport, true);
                 exportContainer.appendChild(aiDiv);
             }
 
@@ -3357,12 +3389,47 @@ const App: React.FC = () => {
                                                     <i className="fa-solid fa-plus"></i> <span className="hidden sm:inline">{text.session.addFiles}</span>
                                                     <input ref={fileInputRef} type="file" multiple accept=".fit,.gpx,.tcx,.csv" className="hidden" onChange={handleFileUpload} />
                                                 </label>
-                                                <button onClick={exportChartsToJPG} className={`px-4 py-2 text-xs font-bold rounded-lg transition flex items-center gap-2 shadow-lg ${userPlan === 'free'
-                                                    ? 'bg-gray-500/10 text-gray-500 border border-gray-500/20 hover:bg-gray-500/20'
-                                                    : 'bg-gradient-to-r from-brand-500 to-blue-500 text-black hover:from-brand-400 hover:to-blue-400 shadow-brand-500/30 animate-pulse hover:animate-none'}`}>
-                                                    {userPlan === 'free' ? <i className="fa-solid fa-lock"></i> : <i className="fa-solid fa-file-image"></i>}
-                                                    <span>Export JPG</span>
-                                                </button>
+                                                {/* Export Button with Language Dropdown */}
+                                                <div className="relative group">
+                                                    <div className="flex">
+                                                        <button
+                                                            onClick={() => exportChartsToJPG()}
+                                                            className={`px-4 py-2 text-xs font-bold rounded-l-lg transition flex items-center gap-2 shadow-lg ${userPlan === 'free'
+                                                                ? 'bg-gray-500/10 text-gray-500 border border-gray-500/20 hover:bg-gray-500/20'
+                                                                : 'bg-gradient-to-r from-brand-500 to-blue-500 text-black hover:from-brand-400 hover:to-blue-400 shadow-brand-500/30'}`}
+                                                        >
+                                                            {userPlan === 'free' ? <i className="fa-solid fa-lock"></i> : <i className="fa-solid fa-file-image"></i>}
+                                                            <span>Export JPG</span>
+                                                        </button>
+                                                        {userPlan !== 'free' && (
+                                                            <div className="relative">
+                                                                <button
+                                                                    onClick={() => setShowExportLangModal(!showExportLangModal)}
+                                                                    className="px-2 py-2 text-xs font-bold bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-r-lg border-l border-blue-600/50 hover:from-blue-400 hover:to-blue-500 transition"
+                                                                    title={lang === 'fr' ? 'Choisir la langue' : 'Choose language'}
+                                                                >
+                                                                    <i className="fa-solid fa-chevron-down"></i>
+                                                                </button>
+                                                                {showExportLangModal && (
+                                                                    <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden animate-fade-in">
+                                                                        <button
+                                                                            onClick={() => { setShowExportLangModal(false); exportChartsToJPG('fr'); }}
+                                                                            className="w-full px-4 py-2 text-xs text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 whitespace-nowrap"
+                                                                        >
+                                                                            <span>🇫🇷</span> Export en Français
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => { setShowExportLangModal(false); exportChartsToJPG('en'); }}
+                                                                            className="w-full px-4 py-2 text-xs text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 whitespace-nowrap"
+                                                                        >
+                                                                            <span>🇬🇧</span> Export in English
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
                                                 <button onClick={() => {
                                                     const s = {
                                                         ...activeSession,
