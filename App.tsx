@@ -1485,6 +1485,13 @@ ${text}`;
 
         try {
             const translated = await fetchSimpleAI(prompt, 'gemini-2.0-flash');
+
+            // Check if API returned an error string (quota exceeded, etc.)
+            if (translated.startsWith('Error:') || translated.includes('429') || translated.includes('quota')) {
+                console.warn('Translation API error, using original text:', translated);
+                return text; // Fallback to original text
+            }
+
             return translated;
         } catch (e) {
             console.error('Translation failed:', e);
