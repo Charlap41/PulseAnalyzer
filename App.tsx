@@ -133,6 +133,7 @@ const App: React.FC = () => {
     const [connectGaps, setConnectGaps] = useState(false); // Default: show gaps (dropouts visible)
     const chartRef = useRef<HTMLCanvasElement | null>(null);
     const chartInstance = useRef<any>(null);
+    const chartZoomState = useRef<{ minX?: number; maxX?: number } | null>(null); // Preserve zoom when toggling curves
     const [expandedDatasetId, setExpandedDatasetId] = useState<string | null>(null);
 
     // --- Modals & Forms State ---
@@ -915,13 +916,34 @@ const App: React.FC = () => {
 
         // Calculate max X from all datasets to prevent white space at end
         let maxX = 0;
+        const allYValues: number[] = [];
         chartDatasets.forEach(ds => {
             ds.data.forEach((point: { x: number, y: number | null }) => {
                 if (point.y !== null && point.x > maxX) {
                     maxX = point.x;
                 }
+                if (point.y !== null) {
+                    allYValues.push(point.y);
+                }
             });
         });
+
+        // Calculate smart Y-axis bounds using percentiles to avoid disproportionate charts
+        // Use 5th percentile for min (ignores warmup low values) and 95th for max (ignores spikes)
+        allYValues.sort((a, b) => a - b);
+        const p5Index = Math.floor(allYValues.length * 0.05);
+        const p95Index = Math.floor(allYValues.length * 0.95);
+        const suggestedMinY = allYValues.length > 0 ? Math.max(40, allYValues[p5Index] - 10) : undefined;
+        const suggestedMaxY = allYValues.length > 0 ? allYValues[p95Index] + 15 : undefined;
+
+
+        // Save current zoom state before destroying chart (to preserve when toggling curves)
+        if (chartInstance.current && chartInstance.current.scales?.x) {
+            chartZoomState.current = {
+                minX: chartInstance.current.scales.x.min,
+                maxX: chartInstance.current.scales.x.max
+            };
+        }
 
         if (chartInstance.current) {
             chartInstance.current.destroy();
@@ -1225,11 +1247,21 @@ const App: React.FC = () => {
                         position: 'left',
                         ticks: { color: textColor },
                         title: { display: true, text: 'BPM', color: textColor },
-                        grace: '10%'
+                        suggestedMin: suggestedMinY,
+                        suggestedMax: suggestedMaxY
                     }
                 }
             }
         });
+
+        // Restore zoom state if it was saved (when toggling curve visibility)
+        if (chartZoomState.current && chartInstance.current) {
+            const { minX, maxX } = chartZoomState.current;
+            if (minX !== undefined && maxX !== undefined) {
+                // Use zoomScale to restore exact previous view
+                chartInstance.current.zoomScale('x', { min: minX, max: maxX }, 'none');
+            }
+        }
 
     }, [activeSession, activeSession?.datasets, smoothing, activeTab, view, chartFillEnabled, connectGaps]);
 
@@ -1580,7 +1612,9 @@ const App: React.FC = () => {
             const refDs = processedDatasets.find(d => d.label === refDsName);
             const tempCharts = [globalChart];
 
-            if (refDs && processedDatasets.length > 1) {
+            // Only create duel charts if there are more than 2 devices
+            // (when only 2 devices, the overview chart already shows everything - duel would be redundant)
+            if (refDs && processedDatasets.length > 2) {
                 for (const ds of processedDatasets) {
                     if (ds.label === refDs.label) continue;
 
