@@ -228,11 +228,11 @@ export const t = (lang: Language) => {
                 autre: "Autre"
             },
             export: {
-                reportTitle: "Analysis Report",
+                reportTitle: "Rapport d'Analyse",
                 date: "Date",
                 type: "Type",
-                statsTitle: "Reliability Statistics",
-                globalChart: "Overview",
+                statsTitle: "Statistiques de Fiabilité",
+                globalChart: "Vue d'ensemble",
                 infoModal: {
                     title: "Structure des Rapports JPG",
                     intro: "Pulse Analyzer génère des images haute résolution prêtes à être partagées. Voici leur structure :",
