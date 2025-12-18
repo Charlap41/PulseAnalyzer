@@ -789,16 +789,13 @@ const App: React.FC = () => {
                                 const xScale = chart.scales.x;
                                 const dataX = tooltip.caretX ? xScale.getValueForPixel(tooltip.caretX) : undefined;
 
-                                // Find or create tooltip inside the chart container (so it rotates with the chart)
-                                const chartContainer = chart.canvas.parentElement;
+                                // Find or create tooltip (append to body for reliable positioning)
                                 let tooltipEl = document.getElementById('fullscreen-tooltip-custom') as HTMLElement | null;
                                 if (!tooltipEl) {
                                     tooltipEl = document.createElement('div');
                                     tooltipEl.id = 'fullscreen-tooltip-custom';
                                     tooltipEl.style.cssText = `
                                         position: absolute;
-                                        left: 0;
-                                        top: 0;
                                         background: ${isDarkMode ? 'rgba(15,15,15,0.95)' : 'rgba(255,255,255,0.95)'};
                                         border: 1px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'};
                                         border-radius: 8px;
@@ -809,18 +806,11 @@ const App: React.FC = () => {
                                         z-index: 10000;
                                         box-shadow: 0 4px 15px rgba(0,0,0,0.4);
                                         opacity: 0;
-                                        transition: opacity 0.1s ease-out;
-                                        will-change: transform, opacity;
                                     `;
-                                    // Append to chart container instead of body
-                                    if (chartContainer) {
-                                        chartContainer.style.position = 'relative';
-                                        chartContainer.appendChild(tooltipEl);
-                                    } else {
-                                        document.body.appendChild(tooltipEl);
-                                    }
+                                    document.body.appendChild(tooltipEl);
                                 }
 
+                                // Update theme styles
                                 tooltipEl.style.background = isDarkMode ? 'rgba(15,15,15,0.95)' : 'rgba(255,255,255,0.95)';
                                 tooltipEl.style.borderColor = isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
                                 tooltipEl.style.color = isDarkMode ? '#fff' : '#333';
@@ -847,18 +837,19 @@ const App: React.FC = () => {
                                 tooltipEl.innerHTML = html;
                                 tooltipEl.style.opacity = '1';
 
-                                // Use transform for GPU-accelerated positioning (smoother)
-                                const tooltipWidth = 180; // Fixed width estimate to avoid reflow
-                                const canvasWidth = chart.canvas.offsetWidth;
-                                let tooltipX = tooltip.caretX + 15;
-                                const tooltipY = Math.max(10, tooltip.caretY - 40);
+                                // Position tooltip using canvas rect (same as main chart)
+                                const canvasRect = chart.canvas.getBoundingClientRect();
+                                const tooltipWidth = tooltipEl.offsetWidth || 180;
+                                const viewportWidth = window.innerWidth;
+                                let tooltipX = canvasRect.left + tooltip.caretX + 15;
 
                                 // Flip to left side if would overflow
-                                if (tooltipX + tooltipWidth > canvasWidth - 20) {
-                                    tooltipX = tooltip.caretX - tooltipWidth - 15;
+                                if (tooltipX + tooltipWidth > viewportWidth - 20) {
+                                    tooltipX = canvasRect.left + tooltip.caretX - tooltipWidth - 15;
                                 }
 
-                                tooltipEl.style.transform = `translate(${tooltipX}px, ${tooltipY}px)`;
+                                tooltipEl.style.left = tooltipX + 'px';
+                                tooltipEl.style.top = (canvasRect.top + window.scrollY + Math.max(10, tooltip.caretY - 40)) + 'px';
                             }
                         }
                     },
