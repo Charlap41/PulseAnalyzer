@@ -1510,6 +1510,10 @@ ${text}`;
         setStatus(text.nav.statusProcessing);
         setIsProcessing(true);
 
+        // Use targetLang for all export text (or default to current app lang)
+        const exportLangToUse = targetLang || lang;
+        const exportText = t(exportLangToUse);
+
         const exportContainer = document.createElement('div');
         exportContainer.style.position = 'absolute';
         exportContainer.style.left = '-9999px';
@@ -1535,8 +1539,8 @@ ${text}`;
             const header = document.createElement('div');
             header.innerHTML = `
                 <div class="mb-4">
-                    <h1 class="text-3xl font-bold text-gray-900">${text.export.reportTitle}: ${activeSession.name}</h1>
-                    <p class="text-gray-600 text-sm">${text.export.type}: ${activeSession.type} • ${text.export.date}: ${new Date(activeSession.date || activeSession.createdAt || parseInt(activeSession.id)).toLocaleDateString()}</p>
+                    <h1 class="text-3xl font-bold text-gray-900">${exportText.export.reportTitle}: ${activeSession.name}</h1>
+                    <p class="text-gray-600 text-sm">${exportText.export.type}: ${exportText.activities[activeSession.type as keyof typeof exportText.activities] || activeSession.type} • ${exportText.export.date}: ${new Date(activeSession.date || activeSession.createdAt || parseInt(activeSession.id)).toLocaleDateString(exportLangToUse === 'fr' ? 'fr-FR' : 'en-US')}</p>
                 </div>
             `;
             exportContainer.appendChild(header);
@@ -1544,15 +1548,15 @@ ${text}`;
             if (activeSession.analysisResults && activeSession.analysisResults.length > 0) {
                 let tableHtml = `
                 <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                    <h3 class="text-lg font-bold mb-3 text-gray-800 border-b pb-2">${text.export.statsTitle}</h3>
+                    <h3 class="text-lg font-bold mb-3 text-gray-800 border-b pb-2">${exportText.export.statsTitle}</h3>
                     <table class="w-full text-sm text-left">
                         <thead class="bg-gray-50 uppercase text-xs text-gray-900 font-bold">
                             <tr>
-                                <th class="px-4 py-2 text-gray-900">${text.table.device}</th>
-                                <th class="px-4 py-2 text-center text-gray-900">${text.dashboard.score}</th>
-                                <th class="px-4 py-2 text-center text-gray-900">${text.dashboard.corr}</th>
-                                <th class="px-4 py-2 text-center text-gray-900">${text.dashboard.mae}</th>
-                                <th class="px-4 py-2 text-center text-gray-900">${text.dashboard.rmse}</th>
+                                <th class="px-4 py-2 text-gray-900">${exportText.table.device}</th>
+                                <th class="px-4 py-2 text-center text-gray-900">${exportText.dashboard.score}</th>
+                                <th class="px-4 py-2 text-center text-gray-900">${exportText.dashboard.corr}</th>
+                                <th class="px-4 py-2 text-center text-gray-900">${exportText.dashboard.mae}</th>
+                                <th class="px-4 py-2 text-center text-gray-900">${exportText.dashboard.rmse}</th>
                             </tr>
                         </thead>
                         <tbody>`;
@@ -1631,7 +1635,7 @@ ${text}`;
                     maintainAspectRatio: false,
                     plugins: {
                         legend: { display: true, labels: { color: '#000', font: { size: 12 } } },
-                        title: { display: true, text: text.export.globalChart, color: '#000', font: { size: 16, weight: 'bold' } }
+                        title: { display: true, text: exportText.export.globalChart, color: '#000', font: { size: 16, weight: 'bold' } }
                     },
                     scales: {
                         x: { type: 'linear', max: trueMaxX, ticks: { color: '#000', callback: (v: number) => { const m = Math.floor(v / 60); const s = Math.floor(v % 60); return `${m}:${s < 10 ? '0' + s : s}`; } }, grid: { color: '#eee' } },
