@@ -817,8 +817,8 @@ const App: React.FC = () => {
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: false, // Disable animation to prevent tooltip/crosshair jitter
-                    interaction: { mode: 'x', intersect: false },
-                    hover: { mode: null, animationDuration: 0 },
+                    interaction: { mode: 'x', intersect: false, axis: 'x' },
+                    hover: { mode: 'x', intersect: false, axis: 'x', animationDuration: 0 },
                     plugins: {
                         legend: { display: false }, // Custom legend used for mobile rotation support
                         zoom: {
@@ -898,20 +898,34 @@ const App: React.FC = () => {
 
                                 if (isPortrait) {
                                     // In portrait mode with rotated chart, we need to transform coordinates
-                                    // The chart is rotated 90deg, so X becomes Y and Y becomes X
+                                    // The chart is rotated 90deg CW: 
+                                    // Visual Top = Screen Right
+                                    // Visual Right = Screen Bottom
+                                    // Visual Bottom = Screen Left
+                                    // Visual Left = Screen Top
+
                                     const centerX = window.innerWidth / 2;
                                     const centerY = window.innerHeight / 2;
 
-                                    // Position relative to the rotated coordinate system
-                                    const rotatedX = centerX + (tooltip.caretY - canvasRect.height / 2);
-                                    let rotatedY = centerY - (tooltip.caretX - canvasRect.width / 2);
+                                    // Correct 90deg CW rotation formulas around center
+                                    // Screen X = CenterX + (HalfHeight - CaretY)
+                                    const rotatedX = centerX + (canvasRect.height / 2 - tooltip.caretY);
+
+                                    // Screen Y = CenterY + (CaretX - HalfWidth)
+                                    const rotatedY = centerY + (tooltip.caretX - canvasRect.width / 2);
 
                                     // Clamp tooltip position to stay within viewport
                                     const tooltipRotatedWidth = tooltipHeight; // After rotation, width becomes height
                                     const tooltipRotatedHeight = tooltipWidth;
 
+                                    // Initial position
                                     let finalLeft = rotatedX - tooltipRotatedWidth / 2;
-                                    let finalTop = rotatedY - tooltipRotatedHeight / 2 - 60; // Position above the cursor
+                                    let finalTop = rotatedY - tooltipRotatedHeight / 2;
+
+                                    // Offset: Move towards Visual Right (Screen X+) -> Away from "Bottom" of chart (Low BPM)
+                                    // The finger is usually below the point (visually). 
+                                    // we push it to the right (Visual Up relative to landscape phone)
+                                    finalLeft += 60;
 
                                     // Keep within horizontal bounds
                                     finalLeft = Math.max(10, Math.min(finalLeft, window.innerWidth - tooltipRotatedWidth - 10));
