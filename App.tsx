@@ -765,11 +765,54 @@ const App: React.FC = () => {
                 }
             };
 
+            // Average line plugin - draws a horizontal dashed line at the average BPM
+            const fullscreenAverageLinePlugin = {
+                id: 'fullscreenAverageLine',
+                beforeDraw: (chart: any) => {
+                    const datasets = chart.data.datasets;
+                    if (!datasets || datasets.length === 0) return;
+
+                    // Calculate the global average of all data points across all datasets
+                    let totalSum = 0;
+                    let totalCount = 0;
+
+                    datasets.forEach((dataset: any) => {
+                        if (!dataset.data) return;
+                        dataset.data.forEach((point: { x: number; y: number | null }) => {
+                            if (point.y !== null) {
+                                totalSum += point.y;
+                                totalCount++;
+                            }
+                        });
+                    });
+
+                    if (totalCount === 0) return;
+
+                    const averageY = totalSum / totalCount;
+                    const yScale = chart.scales.y;
+                    const pixelY = yScale.getPixelForValue(averageY);
+
+                    const ctx = chart.ctx;
+                    const chartArea = chart.chartArea;
+
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.setLineDash([8, 6]); // Dashed line pattern
+                    ctx.moveTo(chartArea.left, pixelY);
+                    ctx.lineTo(chartArea.right, pixelY);
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = isDarkMode ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.2)';
+                    ctx.stroke();
+                    ctx.setLineDash([]); // Reset dash pattern
+                    ctx.restore();
+                }
+            };
+
             // @ts-ignore
             fullscreenChartInstance = new window.Chart(fullscreenCanvas, {
                 type: 'line',
                 data: { datasets: chartDatasets },
-                plugins: [fullscreenCrosshairPlugin, fullscreenWatermarkPlugin],
+                plugins: [fullscreenAverageLinePlugin, fullscreenCrosshairPlugin, fullscreenWatermarkPlugin],
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
