@@ -2820,22 +2820,30 @@ ${text}`;
 
             {/* Fullscreen Chart Modal */}
             {isChartFullscreen && activeSession && activeSession.datasets.length > 0 && (
-                <div className="fixed inset-0 z-[9999] bg-black animate-fade-in">
+                <div className="fixed inset-0 z-[9999] bg-black/95 animate-fade-in flex items-center justify-center p-4">
                     {/* Apply rotation for portrait mobile */}
                     <div
-                        className="w-full h-full"
+                        className="relative bg-white dark:bg-gray-900 shadow-2xl overflow-hidden rounded-2xl"
                         style={isPortraitMobile ? {
                             transform: 'rotate(90deg)',
-                            width: '100vh',
-                            height: '100vw',
+                            width: '92vh',  // Reduced from 100vh for margins
+                            height: '92vw', // Reduced from 100vw for margins
                             transformOrigin: 'center center',
-                            position: 'absolute',
+                            position: 'fixed',
                             top: '50%',
                             left: '50%',
-                            marginTop: '-50vw',
-                            marginLeft: '-50vh'
-                        } : {}}
+                            marginTop: '-46vw', // Half of height
+                            marginLeft: '-46vh', // Half of width
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                        } : {
+                            width: '100%',
+                            height: '100%',
+                            maxWidth: '96vw',
+                            maxHeight: '92vh',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                        }}
                     >
+
                         <button
                             onClick={toggleFullscreen}
                             className="absolute top-2 right-2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-red-500 text-white hover:bg-red-600 shadow-lg transition-transform hover:scale-110"
