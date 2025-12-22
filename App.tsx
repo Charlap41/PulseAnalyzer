@@ -774,10 +774,10 @@ const App: React.FC = () => {
                     responsive: true,
                     maintainAspectRatio: false,
                     animation: false, // Disable animation to prevent tooltip/crosshair jitter
-                    interaction: { mode: 'index', axis: 'x', intersect: false },
+                    interaction: { mode: 'x', intersect: false },
                     hover: { mode: null, animationDuration: 0 },
                     plugins: {
-                        legend: { display: true, position: 'top', labels: { color: isDarkMode ? '#fff' : '#333', font: { size: 14 } } },
+                        legend: { display: false }, // Custom legend used for mobile rotation support
                         zoom: {
                             pan: { enabled: true, mode: 'x' },
                             zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
@@ -789,13 +789,16 @@ const App: React.FC = () => {
                                 const xScale = chart.scales.x;
                                 const dataX = tooltip.caretX ? xScale.getValueForPixel(tooltip.caretX) : undefined;
 
+                                // Check if we're in portrait mobile mode (same logic as container rotation)
+                                const isPortrait = window.innerHeight > window.innerWidth && window.innerWidth < 768;
+
                                 // Find or create tooltip (append to body for reliable positioning)
                                 let tooltipEl = document.getElementById('fullscreen-tooltip-custom') as HTMLElement | null;
                                 if (!tooltipEl) {
                                     tooltipEl = document.createElement('div');
                                     tooltipEl.id = 'fullscreen-tooltip-custom';
                                     tooltipEl.style.cssText = `
-                                        position: absolute;
+                                        position: fixed;
                                         background: ${isDarkMode ? 'rgba(15,15,15,0.95)' : 'rgba(255,255,255,0.95)'};
                                         border: 1px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'};
                                         border-radius: 8px;
@@ -803,7 +806,7 @@ const App: React.FC = () => {
                                         pointer-events: none;
                                         font-family: Inter, sans-serif;
                                         font-size: 13px;
-                                        z-index: 10000;
+                                        z-index: 10001;
                                         box-shadow: 0 4px 15px rgba(0,0,0,0.4);
                                         opacity: 0;
                                     `;
@@ -814,6 +817,14 @@ const App: React.FC = () => {
                                 tooltipEl.style.background = isDarkMode ? 'rgba(15,15,15,0.95)' : 'rgba(255,255,255,0.95)';
                                 tooltipEl.style.borderColor = isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
                                 tooltipEl.style.color = isDarkMode ? '#fff' : '#333';
+
+                                // Apply rotation transform for portrait mobile
+                                if (isPortrait) {
+                                    tooltipEl.style.transform = 'rotate(90deg)';
+                                    tooltipEl.style.transformOrigin = 'center center';
+                                } else {
+                                    tooltipEl.style.transform = 'none';
+                                }
 
                                 if (tooltip.opacity === 0 || dataX === undefined) {
                                     tooltipEl.style.opacity = '0';
@@ -837,19 +848,36 @@ const App: React.FC = () => {
                                 tooltipEl.innerHTML = html;
                                 tooltipEl.style.opacity = '1';
 
-                                // Position tooltip using canvas rect (same as main chart)
+                                // Position tooltip - adjust for rotation on portrait mobile
                                 const canvasRect = chart.canvas.getBoundingClientRect();
                                 const tooltipWidth = tooltipEl.offsetWidth || 180;
-                                const viewportWidth = window.innerWidth;
-                                let tooltipX = canvasRect.left + tooltip.caretX + 15;
+                                const tooltipHeight = tooltipEl.offsetHeight || 100;
 
-                                // Flip to left side if would overflow
-                                if (tooltipX + tooltipWidth > viewportWidth - 20) {
-                                    tooltipX = canvasRect.left + tooltip.caretX - tooltipWidth - 15;
+                                if (isPortrait) {
+                                    // In portrait mode with rotated chart, we need to transform coordinates
+                                    // The chart is rotated 90deg, so X becomes Y and Y becomes X
+                                    const centerX = window.innerWidth / 2;
+                                    const centerY = window.innerHeight / 2;
+
+                                    // Position relative to the rotated coordinate system
+                                    const rotatedX = centerX + (tooltip.caretY - canvasRect.height / 2);
+                                    const rotatedY = centerY - (tooltip.caretX - canvasRect.width / 2);
+
+                                    tooltipEl.style.left = (rotatedX - tooltipHeight / 2) + 'px';
+                                    tooltipEl.style.top = (rotatedY + 20) + 'px';
+                                } else {
+                                    // Normal positioning for landscape/desktop
+                                    const viewportWidth = window.innerWidth;
+                                    let tooltipX = canvasRect.left + tooltip.caretX + 15;
+
+                                    // Flip to left side if would overflow
+                                    if (tooltipX + tooltipWidth > viewportWidth - 20) {
+                                        tooltipX = canvasRect.left + tooltip.caretX - tooltipWidth - 15;
+                                    }
+
+                                    tooltipEl.style.left = tooltipX + 'px';
+                                    tooltipEl.style.top = (canvasRect.top + window.scrollY + Math.max(10, tooltip.caretY - 40)) + 'px';
                                 }
-
-                                tooltipEl.style.left = tooltipX + 'px';
-                                tooltipEl.style.top = (canvasRect.top + window.scrollY + Math.max(10, tooltip.caretY - 40)) + 'px';
                             }
                         }
                     },
@@ -2814,8 +2842,25 @@ ${text}`;
                         >
                             <i className="fa-solid fa-xmark text-lg"></i>
                         </button>
-                        <div className="w-full h-full bg-white dark:bg-gray-900">
-                            <canvas id="fullscreenChart"></canvas>
+                        <div className="w-full h-full flex flex-col bg-white dark:bg-gray-900">
+                            {/* Custom legend - rotates with the container on mobile */}
+                            <div className="flex flex-wrap gap-3 items-center justify-center px-4 py-2 bg-gray-100 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+                                {activeSession.datasets.filter(d => d.visible).map(ds => (
+                                    <div key={ds.id} className="flex items-center gap-2 text-sm">
+                                        <span
+                                            className="w-3 h-3 rounded-sm flex-shrink-0"
+                                            style={{ backgroundColor: ds.color }}
+                                        />
+                                        <span className="text-gray-700 dark:text-gray-200 font-medium whitespace-nowrap">
+                                            {ds.name}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                            {/* Chart canvas */}
+                            <div className="flex-1 min-h-0">
+                                <canvas id="fullscreenChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
