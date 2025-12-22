@@ -904,22 +904,39 @@ const App: React.FC = () => {
 
                                     // Position relative to the rotated coordinate system
                                     const rotatedX = centerX + (tooltip.caretY - canvasRect.height / 2);
-                                    const rotatedY = centerY - (tooltip.caretX - canvasRect.width / 2);
+                                    let rotatedY = centerY - (tooltip.caretX - canvasRect.width / 2);
 
-                                    tooltipEl.style.left = (rotatedX - tooltipHeight / 2) + 'px';
-                                    tooltipEl.style.top = (rotatedY + 20) + 'px';
+                                    // Clamp tooltip position to stay within viewport
+                                    const tooltipRotatedWidth = tooltipHeight; // After rotation, width becomes height
+                                    const tooltipRotatedHeight = tooltipWidth;
+
+                                    let finalLeft = rotatedX - tooltipRotatedWidth / 2;
+                                    let finalTop = rotatedY - tooltipRotatedHeight / 2 - 60; // Position above the cursor
+
+                                    // Keep within horizontal bounds
+                                    finalLeft = Math.max(10, Math.min(finalLeft, window.innerWidth - tooltipRotatedWidth - 10));
+                                    // Keep within vertical bounds
+                                    finalTop = Math.max(10, Math.min(finalTop, window.innerHeight - tooltipRotatedHeight - 10));
+
+                                    tooltipEl.style.left = finalLeft + 'px';
+                                    tooltipEl.style.top = finalTop + 'px';
                                 } else {
                                     // Normal positioning for landscape/desktop
                                     const viewportWidth = window.innerWidth;
+                                    const viewportHeight = window.innerHeight;
                                     let tooltipX = canvasRect.left + tooltip.caretX + 15;
+                                    let tooltipY = canvasRect.top + window.scrollY + Math.max(10, tooltip.caretY - 40);
 
-                                    // Flip to left side if would overflow
+                                    // Flip to left side if would overflow horizontally
                                     if (tooltipX + tooltipWidth > viewportWidth - 20) {
                                         tooltipX = canvasRect.left + tooltip.caretX - tooltipWidth - 15;
                                     }
 
+                                    // Keep within vertical bounds
+                                    tooltipY = Math.max(10, Math.min(tooltipY, viewportHeight - tooltipHeight - 10));
+
                                     tooltipEl.style.left = tooltipX + 'px';
-                                    tooltipEl.style.top = (canvasRect.top + window.scrollY + Math.max(10, tooltip.caretY - 40)) + 'px';
+                                    tooltipEl.style.top = tooltipY + 'px';
                                 }
                             }
                         }
@@ -2909,7 +2926,11 @@ ${text}`;
                                 ))}
                             </div>
                             {/* Chart canvas */}
-                            <div className="flex-1 min-h-0">
+                            <div
+                                className="flex-1 min-h-0"
+                                style={{ touchAction: 'none' }}
+                                onTouchMove={(e) => e.preventDefault()}
+                            >
                                 <canvas id="fullscreenChart"></canvas>
                             </div>
                         </div>
