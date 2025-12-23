@@ -47,7 +47,7 @@ export interface User {
     email: string | null;
 }
 
-export type ViewState = 'landing' | 'app' | 'help' | 'privacy' | 'terms' | 'contact';
+export type ViewState = 'landing' | 'app' | 'help' | 'privacy' | 'terms' | 'contact' | 'quick-analysis';
 
 export type Language = 'fr' | 'en';
 

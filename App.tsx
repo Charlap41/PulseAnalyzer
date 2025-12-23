@@ -177,6 +177,23 @@ const App: React.FC = () => {
     const justPurchasedRef = useRef(false);
     const pendingLocalhostFix = useRef<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const guestFileInputRef = useRef<HTMLInputElement>(null);
+
+    // --- Guest Mode State (Quick Analysis - Standalone View) ---
+    const [guestData, setGuestData] = useState<{
+        filename: string;
+        data: { ts: number; hr: number }[];
+        stats: {
+            duration: number;
+            avgHR: number;
+            maxHR: number;
+            minHR: number;
+            dropouts: number;
+            lostSeconds: number;
+            variability: number; // RMSSD approximation
+            zones: { z1: number; z2: number; z3: number; z4: number; z5: number };
+        };
+    } | null>(null);
 
     // --- History Tracking (for 24h limit) ---
     const [creationHistory, setCreationHistory] = useState<number[]>(() => {
@@ -2440,6 +2457,116 @@ ${text}`;
         e.target.value = '';
     };
 
+    // --- QUICK ANALYSIS: Compute Stats from HR Data ---
+    const computeGuestStats = (data: { ts: number; hr: number }[]) => {
+        if (data.length < 10) return null;
+
+        const validHR = data.filter(d => d.hr > 30 && d.hr < 220);
+        if (validHR.length === 0) return null;
+
+        const duration = Math.round((data[data.length - 1].ts - data[0].ts) / 1000);
+        const avgHR = Math.round(validHR.reduce((sum, d) => sum + d.hr, 0) / validHR.length);
+        const maxHR = Math.max(...validHR.map(d => d.hr));
+        const minHR = Math.min(...validHR.map(d => d.hr));
+
+        // Count dropouts (time gaps > 2s)
+        let dropouts = 0;
+        let lostSeconds = 0;
+        for (let i = 1; i < data.length; i++) {
+            const gap = (data[i].ts - data[i - 1].ts) / 1000;
+            if (gap > 2) {
+                dropouts++;
+                lostSeconds += Math.round(gap - 1);
+            }
+        }
+
+        // HRV approximation (RMSSD from successive differences)
+        let sumSquaredDiff = 0;
+        let count = 0;
+        for (let i = 1; i < validHR.length; i++) {
+            const diff = validHR[i].hr - validHR[i - 1].hr;
+            sumSquaredDiff += diff * diff;
+            count++;
+        }
+        const variability = count > 0 ? Math.round(Math.sqrt(sumSquaredDiff / count) * 10) / 10 : 0;
+
+        // HR Zones (based on % of max observed HR)
+        const zones = { z1: 0, z2: 0, z3: 0, z4: 0, z5: 0 };
+        validHR.forEach(d => {
+            const pct = (d.hr / maxHR) * 100;
+            if (pct < 60) zones.z1++;
+            else if (pct < 70) zones.z2++;
+            else if (pct < 80) zones.z3++;
+            else if (pct < 90) zones.z4++;
+            else zones.z5++;
+        });
+        // Convert to percentages
+        const total = validHR.length;
+        zones.z1 = Math.round((zones.z1 / total) * 100);
+        zones.z2 = Math.round((zones.z2 / total) * 100);
+        zones.z3 = Math.round((zones.z3 / total) * 100);
+        zones.z4 = Math.round((zones.z4 / total) * 100);
+        zones.z5 = Math.round((zones.z5 / total) * 100);
+
+        return { duration, avgHR, maxHR, minHR, dropouts, lostSeconds, variability, zones };
+    };
+
+    // --- QUICK ANALYSIS: Guest Upload Handler ---
+    const handleGuestUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+
+        const file = e.target.files[0];
+        const ext = file.name.split('.').pop()?.toLowerCase() || '';
+
+        setStatus(lang === 'fr' ? 'Analyse en cours...' : 'Analyzing...');
+        setIsProcessing(true);
+
+        try {
+            let parsedData: { ts: number; hr: number }[] | null = null;
+
+            if (ext === 'fit') {
+                const buffer = await file.arrayBuffer();
+                const result = await parseFitFile(buffer, file.name);
+                if (result) parsedData = result.points;
+            } else if (ext === 'gpx' || ext === 'tcx' || ext === 'csv') {
+                const content = await file.text();
+                const result = await parseTextFile(content, file.name, ext);
+                if (result) parsedData = result.points;
+            }
+
+            if (!parsedData || parsedData.length === 0) {
+                alert(lang === 'fr' ? 'Impossible de lire ce fichier.' : 'Unable to read this file.');
+                setIsProcessing(false);
+                return;
+            }
+
+            // Compute stats
+            const stats = computeGuestStats(parsedData);
+            if (!stats) {
+                alert(lang === 'fr' ? 'Données de fréquence cardiaque invalides.' : 'Invalid heart rate data.');
+                setIsProcessing(false);
+                return;
+            }
+
+            // Store guest data and navigate to quick-analysis view
+            setGuestData({
+                filename: file.name,
+                data: parsedData,
+                stats
+            });
+            setView('quick-analysis');
+            setIsProcessing(false);
+            setStatus(text.nav.statusReady);
+
+        } catch (error) {
+            console.error('Guest upload error:', error);
+            alert(lang === 'fr' ? 'Erreur lors de l\'analyse.' : 'Error during analysis.');
+            setIsProcessing(false);
+        }
+
+        e.target.value = '';
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-black text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300">
             {/* --- GLOBAL OVERLAYS (Can appear on ANY view) --- */}
@@ -3175,6 +3302,7 @@ ${text}`;
                     userEmail={currentUser?.email || null}
                     onUpgrade={() => setPlanOverviewModalOpen(true)}
                     onNavigate={(view) => setView(view)}
+                    onQuickAnalysis={() => guestFileInputRef.current?.click()}
                 />
             )}
 
@@ -3184,6 +3312,272 @@ ${text}`;
 
             {(view === 'privacy' || view === 'terms' || view === 'contact') && (
                 <LegalPage view={view} onBack={() => setView('landing')} />
+            )}
+
+            {/* --- QUICK ANALYSIS VIEW (Standalone Guest Mode) --- */}
+            {view === 'quick-analysis' && guestData && (
+                <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-black">
+                    {/* Header */}
+                    <nav className="sticky top-0 z-50 border-b border-gray-200 dark:border-white/10 bg-white/80 dark:bg-brand-dark/90 backdrop-blur-md">
+                        <div className="max-w-4xl mx-auto px-4 h-14 flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <i className="fa-solid fa-heart-pulse text-brand-500 text-xl"></i>
+                                <span className="font-bold text-lg">Pulse<span className="text-brand-500">Analyzer</span></span>
+                            </div>
+                            <button
+                                onClick={() => { setGuestData(null); setView('landing'); }}
+                                className="px-4 py-2 text-sm font-bold text-gray-500 hover:text-red-500 transition flex items-center gap-2"
+                            >
+                                <i className="fa-solid fa-xmark"></i>
+                                {lang === 'fr' ? 'Fermer' : 'Close'}
+                            </button>
+                        </div>
+                    </nav>
+
+                    <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+                        {/* Title */}
+                        <div className="text-center">
+                            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
+                                {lang === 'fr' ? 'Analyse Rapide' : 'Quick Analysis'}
+                            </h1>
+                            <p className="text-sm text-gray-500 truncate max-w-xs mx-auto">{guestData.filename}</p>
+                        </div>
+
+                        {/* Stats Tiles Grid - Mobile optimized */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                            {/* Duration */}
+                            <div className="bg-white dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/10 shadow-sm">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <i className="fa-solid fa-clock text-blue-500"></i>
+                                    <span className="text-xs font-bold text-gray-500 uppercase">{lang === 'fr' ? 'Durée' : 'Duration'}</span>
+                                </div>
+                                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    {Math.floor(guestData.stats.duration / 60)}<span className="text-sm font-normal text-gray-500">m</span> {guestData.stats.duration % 60}<span className="text-sm font-normal text-gray-500">s</span>
+                                </div>
+                            </div>
+
+                            {/* Avg HR */}
+                            <div className="bg-white dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/10 shadow-sm">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <i className="fa-solid fa-heart text-red-500"></i>
+                                    <span className="text-xs font-bold text-gray-500 uppercase">{lang === 'fr' ? 'FC Moy' : 'Avg HR'}</span>
+                                </div>
+                                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    {guestData.stats.avgHR}<span className="text-sm font-normal text-gray-500"> bpm</span>
+                                </div>
+                            </div>
+
+                            {/* Max HR */}
+                            <div className="bg-white dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/10 shadow-sm">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <i className="fa-solid fa-arrow-up text-orange-500"></i>
+                                    <span className="text-xs font-bold text-gray-500 uppercase">{lang === 'fr' ? 'FC Max' : 'Max HR'}</span>
+                                </div>
+                                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    {guestData.stats.maxHR}<span className="text-sm font-normal text-gray-500"> bpm</span>
+                                </div>
+                            </div>
+
+                            {/* Min HR */}
+                            <div className="bg-white dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/10 shadow-sm">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <i className="fa-solid fa-arrow-down text-green-500"></i>
+                                    <span className="text-xs font-bold text-gray-500 uppercase">{lang === 'fr' ? 'FC Min' : 'Min HR'}</span>
+                                </div>
+                                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    {guestData.stats.minHR}<span className="text-sm font-normal text-gray-500"> bpm</span>
+                                </div>
+                            </div>
+
+                            {/* Dropouts */}
+                            <div className={`bg-white dark:bg-white/5 rounded-xl p-4 border shadow-sm ${guestData.stats.dropouts > 0 ? 'border-red-300 dark:border-red-500/30' : 'border-gray-200 dark:border-white/10'}`}>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <i className={`fa-solid fa-signal ${guestData.stats.dropouts > 0 ? 'text-red-500' : 'text-brand-500'}`}></i>
+                                    <span className="text-xs font-bold text-gray-500 uppercase">{lang === 'fr' ? 'Décrochages' : 'Dropouts'}</span>
+                                </div>
+                                <div className={`text-2xl font-bold ${guestData.stats.dropouts > 0 ? 'text-red-500' : 'text-brand-500'}`}>
+                                    {guestData.stats.dropouts}
+                                </div>
+                                {guestData.stats.lostSeconds > 0 && (
+                                    <div className="text-xs text-gray-500 mt-1">{guestData.stats.lostSeconds}s {lang === 'fr' ? 'perdues' : 'lost'}</div>
+                                )}
+                            </div>
+
+                            {/* HRV / Variability */}
+                            <div className="bg-white dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/10 shadow-sm">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <i className="fa-solid fa-wave-square text-purple-500"></i>
+                                    <span className="text-xs font-bold text-gray-500 uppercase">{lang === 'fr' ? 'Variabilité' : 'Variability'}</span>
+                                </div>
+                                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    {guestData.stats.variability}<span className="text-sm font-normal text-gray-500"> bpm</span>
+                                </div>
+                            </div>
+
+                            {/* Zones */}
+                            <div className="col-span-2 bg-white dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/10 shadow-sm">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <i className="fa-solid fa-layer-group text-brand-500"></i>
+                                    <span className="text-xs font-bold text-gray-500 uppercase">{lang === 'fr' ? 'Zones FC' : 'HR Zones'}</span>
+                                </div>
+                                <div className="flex gap-1 h-6 rounded-lg overflow-hidden">
+                                    <div className="bg-gray-300" style={{ width: `${guestData.stats.zones.z1}%` }} title={`Z1: ${guestData.stats.zones.z1}%`}></div>
+                                    <div className="bg-blue-400" style={{ width: `${guestData.stats.zones.z2}%` }} title={`Z2: ${guestData.stats.zones.z2}%`}></div>
+                                    <div className="bg-green-400" style={{ width: `${guestData.stats.zones.z3}%` }} title={`Z3: ${guestData.stats.zones.z3}%`}></div>
+                                    <div className="bg-orange-400" style={{ width: `${guestData.stats.zones.z4}%` }} title={`Z4: ${guestData.stats.zones.z4}%`}></div>
+                                    <div className="bg-red-500" style={{ width: `${guestData.stats.zones.z5}%` }} title={`Z5: ${guestData.stats.zones.z5}%`}></div>
+                                </div>
+                                <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+                                    <span>Z1 {guestData.stats.zones.z1}%</span>
+                                    <span>Z2 {guestData.stats.zones.z2}%</span>
+                                    <span>Z3 {guestData.stats.zones.z3}%</span>
+                                    <span>Z4 {guestData.stats.zones.z4}%</span>
+                                    <span>Z5 {guestData.stats.zones.z5}%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Chart - Interactive SVG */}
+                        <div className="bg-white dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/10 shadow-sm">
+                            <h3 className="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                                <i className="fa-solid fa-chart-line text-brand-500"></i>
+                                {lang === 'fr' ? 'Courbe de Fréquence Cardiaque' : 'Heart Rate Curve'}
+                                <span className="text-[10px] font-normal ml-auto">{lang === 'fr' ? 'Touchez pour voir les détails' : 'Touch to see details'}</span>
+                            </h3>
+                            <div
+                                className="h-64 sm:h-80 relative cursor-crosshair"
+                                onMouseMove={(e) => {
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const x = (e.clientX - rect.left) / rect.width;
+                                    const dataIndex = Math.floor(x * guestData.data.length);
+                                    const point = guestData.data[Math.max(0, Math.min(dataIndex, guestData.data.length - 1))];
+                                    if (point && point.hr > 30 && point.hr < 220) {
+                                        const time = Math.round((point.ts - guestData.data[0].ts) / 1000);
+                                        (e.currentTarget as HTMLElement).dataset.tooltip = `${Math.round(point.hr)} bpm • ${Math.floor(time / 60)}m${(time % 60).toString().padStart(2, '0')}s`;
+                                        (e.currentTarget as HTMLElement).dataset.tooltipX = `${e.clientX - rect.left}`;
+                                        (e.currentTarget as HTMLElement).dataset.tooltipY = `${e.clientY - rect.top}`;
+                                        e.currentTarget.querySelector('.chart-tooltip')?.classList.remove('hidden');
+                                        const tooltip = e.currentTarget.querySelector('.chart-tooltip') as HTMLElement;
+                                        if (tooltip) {
+                                            tooltip.textContent = (e.currentTarget as HTMLElement).dataset.tooltip || '';
+                                            tooltip.style.left = `${Math.min(rect.width - 100, Math.max(10, e.clientX - rect.left))}px`;
+                                            tooltip.style.top = `${Math.max(10, e.clientY - rect.top - 30)}px`;
+                                        }
+                                        const cursor = e.currentTarget.querySelector('.chart-cursor') as HTMLElement;
+                                        if (cursor) {
+                                            cursor.classList.remove('hidden');
+                                            cursor.style.left = `${((e.clientX - rect.left) / rect.width) * 100}%`;
+                                        }
+                                    }
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.querySelector('.chart-tooltip')?.classList.add('hidden');
+                                    e.currentTarget.querySelector('.chart-cursor')?.classList.add('hidden');
+                                }}
+                                onTouchMove={(e) => {
+                                    const touch = e.touches[0];
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    const x = (touch.clientX - rect.left) / rect.width;
+                                    const dataIndex = Math.floor(x * guestData.data.length);
+                                    const point = guestData.data[Math.max(0, Math.min(dataIndex, guestData.data.length - 1))];
+                                    if (point && point.hr > 30 && point.hr < 220) {
+                                        const time = Math.round((point.ts - guestData.data[0].ts) / 1000);
+                                        const tooltip = e.currentTarget.querySelector('.chart-tooltip') as HTMLElement;
+                                        if (tooltip) {
+                                            tooltip.textContent = `${Math.round(point.hr)} bpm • ${Math.floor(time / 60)}m${(time % 60).toString().padStart(2, '0')}s`;
+                                            tooltip.classList.remove('hidden');
+                                            tooltip.style.left = `${Math.min(rect.width - 100, Math.max(10, touch.clientX - rect.left))}px`;
+                                            tooltip.style.top = `${Math.max(10, touch.clientY - rect.top - 40)}px`;
+                                        }
+                                        const cursor = e.currentTarget.querySelector('.chart-cursor') as HTMLElement;
+                                        if (cursor) {
+                                            cursor.classList.remove('hidden');
+                                            cursor.style.left = `${x * 100}%`;
+                                        }
+                                    }
+                                }}
+                                onTouchEnd={(e) => {
+                                    e.currentTarget.querySelector('.chart-tooltip')?.classList.add('hidden');
+                                    e.currentTarget.querySelector('.chart-cursor')?.classList.add('hidden');
+                                }}
+                            >
+                                {/* Tooltip */}
+                                <div className="chart-tooltip hidden absolute z-10 px-2 py-1 bg-gray-900 text-white text-xs font-bold rounded shadow-lg pointer-events-none"></div>
+                                {/* Cursor line */}
+                                <div className="chart-cursor hidden absolute top-0 bottom-0 w-px bg-brand-500 pointer-events-none" style={{ left: '50%' }}></div>
+
+                                {(() => {
+                                    const validData = guestData.data.filter(d => d.hr > 30 && d.hr < 220);
+                                    if (validData.length < 2) return <div className="flex items-center justify-center h-full text-gray-500">No valid data</div>;
+
+                                    const minHR = guestData.stats.minHR;
+                                    const maxHR = guestData.stats.maxHR;
+                                    const range = maxHR - minHR || 1;
+                                    const startTs = validData[0].ts;
+                                    const endTs = validData[validData.length - 1].ts;
+                                    const timeRange = endTs - startTs || 1;
+
+                                    // Use more points for smoother line (max 2000)
+                                    const step = Math.max(1, Math.floor(validData.length / 2000));
+                                    const sampled = validData.filter((_, i) => i % step === 0);
+
+                                    const points = sampled.map((d, i) => {
+                                        const x = ((d.ts - startTs) / timeRange) * 100;
+                                        const y = 100 - ((d.hr - minHR) / range) * 100;
+                                        return `${i === 0 ? 'M' : 'L'}${x.toFixed(2)},${y.toFixed(2)}`;
+                                    }).join(' ');
+
+                                    const areaPath = points + ` L100,100 L0,100 Z`;
+
+                                    return (
+                                        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
+                                            {/* Grid lines */}
+                                            <line x1="0" y1="25" x2="100" y2="25" stroke="currentColor" strokeOpacity="0.1" strokeWidth="0.15" />
+                                            <line x1="0" y1="50" x2="100" y2="50" stroke="currentColor" strokeOpacity="0.1" strokeWidth="0.15" />
+                                            <line x1="0" y1="75" x2="100" y2="75" stroke="currentColor" strokeOpacity="0.1" strokeWidth="0.15" />
+                                            {/* Fill */}
+                                            <path d={areaPath} fill="rgba(255, 59, 48, 0.1)" />
+                                            {/* Line - thinner for smoother appearance */}
+                                            <path d={points} fill="none" stroke="#ff3b30" strokeWidth="0.3" vectorEffect="non-scaling-stroke" />
+                                        </svg>
+                                    );
+                                })()}
+                                {/* Y-axis labels */}
+                                <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-[10px] text-gray-400 -ml-1 py-1">
+                                    <span>{guestData.stats.maxHR}</span>
+                                    <span>{Math.round((guestData.stats.maxHR + guestData.stats.minHR) / 2)}</span>
+                                    <span>{guestData.stats.minHR}</span>
+                                </div>
+                                {/* X-axis labels */}
+                                <div className="absolute bottom-0 left-0 w-full flex justify-between text-[10px] text-gray-400 -mb-4 px-2">
+                                    <span>0</span>
+                                    <span>{Math.floor(guestData.stats.duration / 60 / 2)}m</span>
+                                    <span>{Math.floor(guestData.stats.duration / 60)}m</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* CTA */}
+                        <div className="bg-gradient-to-r from-brand-500/20 to-blue-500/20 rounded-xl p-6 border border-brand-500/30 text-center">
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                                <i className="fa-solid fa-star text-yellow-500 mr-2"></i>
+                                {lang === 'fr' ? 'Obtenez une analyse complète' : 'Get a complete analysis'}
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 max-w-md mx-auto">
+                                {lang === 'fr'
+                                    ? 'Comparez jusqu\'à 3 capteurs, obtenez des statistiques de précision et des recommandations IA personnalisées.'
+                                    : 'Compare up to 3 sensors, get accuracy statistics and personalized AI recommendations.'}
+                            </p>
+                            <button
+                                onClick={() => { setGuestData(null); setAuthMode('register'); setAuthModalOpen(true); }}
+                                className="px-8 py-3 bg-brand-500 text-black font-bold rounded-xl hover:bg-brand-400 transition shadow-lg shadow-brand-500/30"
+                            >
+                                <i className="fa-solid fa-user-plus mr-2"></i>
+                                {lang === 'fr' ? 'Créer un compte gratuit' : 'Create free account'}
+                            </button>
+                        </div>
+                    </main>
+                </div>
             )}
 
             {view === 'app' && (
@@ -3516,7 +3910,12 @@ ${text}`;
                                     <div className="animate-fade-in space-y-6">
                                         {/* Header Controls */}
                                         <div className="flex flex-wrap justify-between items-center">
-                                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{activeSession.name} <span className="text-sm font-normal text-gray-500">({activeSession.type})</span></h2>
+                                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                                                {activeSession.name}
+                                                <span className="text-sm font-normal text-gray-500">
+                                                    ({activeSession.type})
+                                                </span>
+                                            </h2>
                                             <div className="flex gap-2">
                                                 <label className="px-3 py-2 text-xs font-bold bg-gray-500/10 text-gray-500 dark:bg-white/5 dark:text-gray-400 border border-gray-500/20 dark:border-white/10 rounded cursor-pointer hover:bg-brand-500/10 hover:text-brand-500 transition flex items-center gap-2">
                                                     <i className="fa-solid fa-plus"></i> <span className="hidden sm:inline">{text.session.addFiles}</span>
@@ -4145,6 +4544,15 @@ ${text}`;
                 </>
             )
             }
+
+            {/* Hidden Input for Guest Mode Single File Upload */}
+            <input
+                type="file"
+                ref={guestFileInputRef}
+                className="hidden"
+                accept=".fit,.gpx,.tcx,.csv"
+                onChange={handleGuestUpload}
+            />
         </div >
     );
 };

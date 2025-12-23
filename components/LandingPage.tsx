@@ -52,6 +52,7 @@ interface LandingPageProps {
     userEmail?: string | null;
     onUpgrade: () => void;
     onNavigate: (view: any) => void;
+    onQuickAnalysis: () => void;
 }
 
 // Visual component representing the report (replaces static image)
@@ -129,7 +130,7 @@ const MockReport = () => (
     </div>
 );
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onEnterDemo, onLogin, onOpenHelp, onBuyDayPass, onBuyAnnualPass, lang, setLang, userPlan, isLoggedIn, userEmail, onUpgrade, onNavigate }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onEnterDemo, onLogin, onOpenHelp, onBuyDayPass, onBuyAnnualPass, lang, setLang, userPlan, isLoggedIn, userEmail, onUpgrade, onNavigate, onQuickAnalysis }) => {
     const text = t(lang).landing;
     const pricing = t(lang).pricing;
     const exportInfo = t(lang).export.infoModal;
@@ -241,6 +242,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp, onEnterDem
                             className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold rounded-xl hover:from-purple-500 hover:to-purple-400 transition-all hover:scale-105 shadow-[0_0_30px_rgba(168,85,247,0.3)] flex items-center justify-center gap-2"
                         >
                             <i className="fa-solid fa-play"></i> {text.ctaDemo}
+                        </button>
+                        <button
+                            onClick={onQuickAnalysis}
+                            className="w-full sm:w-auto px-8 py-4 bg-white/10 text-white font-bold rounded-xl border border-white/20 hover:bg-white/20 transition-all hover:scale-105 backdrop-blur-sm flex items-center justify-center gap-2"
+                        >
+                            <i className="fa-solid fa-file-waveform"></i> {lang === 'fr' ? 'Analyse Rapide' : 'Quick Check'}
                         </button>
                     </div>
                 </div >
