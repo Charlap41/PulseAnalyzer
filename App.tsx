@@ -3513,9 +3513,20 @@ ${text}`;
                                     const minHR = guestData.stats.minHR;
                                     const maxHR = guestData.stats.maxHR;
                                     const range = maxHR - minHR || 1;
-                                    const startTs = validData[0].ts;
-                                    const endTs = validData[validData.length - 1].ts;
+                                    const startTs = guestData.data[0].ts;
+                                    const endTs = guestData.data[guestData.data.length - 1].ts;
                                     const timeRange = endTs - startTs || 1;
+
+                                    // Detect dropout zones (time gaps > 2 seconds)
+                                    const dropoutZones: { start: number; end: number }[] = [];
+                                    for (let i = 1; i < guestData.data.length; i++) {
+                                        const gap = (guestData.data[i].ts - guestData.data[i - 1].ts) / 1000;
+                                        if (gap > 2) {
+                                            const startX = ((guestData.data[i - 1].ts - startTs) / timeRange) * 100;
+                                            const endX = ((guestData.data[i].ts - startTs) / timeRange) * 100;
+                                            dropoutZones.push({ start: startX, end: endX });
+                                        }
+                                    }
 
                                     // Use more points for smoother line (max 2000)
                                     const step = Math.max(1, Math.floor(validData.length / 2000));
@@ -3531,6 +3542,19 @@ ${text}`;
 
                                     return (
                                         <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
+                                            {/* Dropout zones - red overlay */}
+                                            {dropoutZones.map((zone, i) => (
+                                                <rect
+                                                    key={i}
+                                                    x={zone.start}
+                                                    y={0}
+                                                    width={zone.end - zone.start}
+                                                    height={100}
+                                                    fill="rgba(239, 68, 68, 0.25)"
+                                                    stroke="rgba(239, 68, 68, 0.5)"
+                                                    strokeWidth="0.2"
+                                                />
+                                            ))}
                                             {/* Grid lines */}
                                             <line x1="0" y1="25" x2="100" y2="25" stroke="currentColor" strokeOpacity="0.1" strokeWidth="0.15" />
                                             <line x1="0" y1="50" x2="100" y2="50" stroke="currentColor" strokeOpacity="0.1" strokeWidth="0.15" />
